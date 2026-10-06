@@ -19,7 +19,8 @@ namespace ShadowTrace
             return filter;
         }
 
-        public static bool Grounded(Collider2D collider, LayerMask mask, RaycastHit2D[] results)
+        public static bool Grounded(Collider2D collider, LayerMask mask, RaycastHit2D[] results,
+            bool includeShadowPlatforms = true)
         {
             int count = collider.Cast(Vector2.down, Filter(mask), results, 0.08f);
             for (int i = 0; i < count; i++)
@@ -27,7 +28,7 @@ namespace ShadowTrace
                 var hit = results[i];
                 if (hit.normal.y < 0.5f) continue;
                 var shadow = hit.collider.GetComponentInParent<ShadowActor>();
-                if (IsWorld(hit.collider) || (shadow != null && shadow.PlayerCollisionEnabled)) return true;
+                if (IsWorld(hit.collider) || (includeShadowPlatforms && shadow != null && shadow.PlayerCollisionEnabled)) return true;
             }
             return false;
         }

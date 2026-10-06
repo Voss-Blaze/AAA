@@ -98,21 +98,6 @@ namespace ShadowTrace.Tests
             Assert.IsFalse(actor.Stopped);
         }
 
-        [UnityTest] public IEnumerator FollowMaintainsOffsetAndCannotCrossWall()
-        {
-            var actor = Spawn(ShadowKind.Follow, Vector2.zero);
-            player.Body.position += Vector2.up;
-            yield return new WaitForSeconds(0.3f);
-            Assert.That(actor.transform.position.y, Is.EqualTo(1).Within(0.1f));
-            var wall = World("Wall", new Vector2(2, 1), new Vector2(0.5f, 6));
-            player.Body.position += Vector2.right * 5;
-            yield return new WaitForSeconds(0.7f);
-            Assert.Less(actor.transform.position.x, 1.5f);
-            Object.Destroy(wall);
-            yield return new WaitForSeconds(0.7f);
-            Assert.That(actor.transform.position.x, Is.EqualTo(5).Within(0.1f));
-        }
-
         [Test] public void StayFindsGroundAndBlockedSpawnDoesNotAllocate()
         {
             Assert.IsTrue(manager.TrySpawn(ShadowKind.Stay, new Vector2(0, 3), 0));

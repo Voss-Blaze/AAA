@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace ShadowTrace
@@ -13,6 +14,7 @@ namespace ShadowTrace
         public bool IsGrounded { get; private set; }
         public Rigidbody2D Body { get; private set; }
         public BoxCollider2D Shape { get; private set; }
+        public event Action JumpRequested;
         private bool jumpRequested;
         private bool sprint;
         private readonly RaycastHit2D[] hits = new RaycastHit2D[32];
@@ -30,7 +32,14 @@ namespace ShadowTrace
         {
             HorizontalInput = (Input.GetKey(KeyCode.D) ? 1 : 0) - (Input.GetKey(KeyCode.A) ? 1 : 0);
             sprint = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-            if (Input.GetKeyDown(KeyCode.Space)) jumpRequested = true;
+            if (Input.GetKeyDown(KeyCode.Space)) RequestJump();
+        }
+
+        /// <summary>Broadcast intent even if the player is airborne; each follower checks its own ground.</summary>
+        public void RequestJump()
+        {
+            jumpRequested = true;
+            JumpRequested?.Invoke();
         }
 
         private void FixedUpdate()

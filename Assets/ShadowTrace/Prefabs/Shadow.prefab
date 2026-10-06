@@ -175,8 +175,6 @@ MonoBehaviour:
   reverseInterval: 0.2
   blockedDuration: 0.4
   pushForce: 35
-  followSpeed: 10
-  followDeadZone: 0.025
   worldMask:
     serializedVersion: 2
     m_Bits: 4294967295
