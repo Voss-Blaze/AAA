@@ -1,0 +1,5 @@
+{
+  "name": "ShadowTrace.Editor",
+  "references": ["ShadowTrace.Runtime"],
+  "includePlatforms": ["Editor"]
+}

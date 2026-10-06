@@ -1,0 +1,6 @@
+{
+  "name": "ShadowTrace.EditModeTests",
+  "references": ["ShadowTrace.Runtime"],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"]
+}

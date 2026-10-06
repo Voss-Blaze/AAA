@@ -1,0 +1,5 @@
+{
+  "name": "ShadowTrace.PlayModeTests",
+  "references": ["ShadowTrace.Runtime"],
+  "optionalUnityReferences": ["TestAssemblies"]
+}
