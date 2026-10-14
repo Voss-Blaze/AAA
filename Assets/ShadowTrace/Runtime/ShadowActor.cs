@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace ShadowTrace
 {
-    [RequireComponent(typeof(Rigidbody2D), typeof(BoxCollider2D), typeof(SpriteRenderer))]
+    [RequireComponent(typeof(Rigidbody2D), typeof(BoxCollider2D))]
     public sealed class ShadowActor : MonoBehaviour
     {
         [Min(0.01f)] public float obstacleDistance = 0.08f;
@@ -15,6 +15,10 @@ namespace ShadowTrace
         public bool Stopped { get; private set; }
         public bool PlayerCollisionEnabled { get; private set; }
         public BoxCollider2D Shape { get; private set; }
+        public Rigidbody2D Body => body;
+        public bool IsGrounded => initialized && (Kind == ShadowKind.Stay ||
+            (body.velocity.y <= 0.1f && TracePhysics.Grounded(Shape, worldMask, hits, false)));
+        public int AnimationDirection => Kind == ShadowKind.Follow && player != null ? player.HorizontalInput : direction;
         private Rigidbody2D body;
         private SpriteRenderer sprite;
         private PlayerController2D player;
@@ -33,7 +37,7 @@ namespace ShadowTrace
         {
             body = GetComponent<Rigidbody2D>();
             Shape = GetComponent<BoxCollider2D>();
-            sprite = GetComponent<SpriteRenderer>();
+            sprite = GetComponentInChildren<SpriteRenderer>();
         }
 
         public void Initialize(ShadowKind kind, int number, int initialDirection,

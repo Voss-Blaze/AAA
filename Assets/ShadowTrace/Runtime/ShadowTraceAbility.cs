@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace ShadowTrace
@@ -10,6 +11,7 @@ namespace ShadowTrace
         [Min(0.01f)] public float recordingDuration = 6;
         [Min(0.01f)] public float stopThreshold = 0.3f;
         public TracePhase Phase { get; private set; }
+        public event Action ShadowSpawned;
         public float Remaining => Phase == TracePhase.Idle ? 0 : Mathf.Max(0, duration - elapsed);
         public ShadowKind PreviewKind => recording == null ? ShadowKind.Stay : recording.Classify(stopThreshold);
         private PlayerController2D player;
@@ -28,6 +30,7 @@ namespace ShadowTrace
         /// <summary>The same action as E, also usable by a future input adapter.</summary>
         public void UseTrace()
         {
+            if (!isActiveAndEnabled) return;
             if (Phase == TracePhase.Preparing)
             {
                 ResetTrace();
@@ -65,11 +68,13 @@ namespace ShadowTrace
 
         private void Finish()
         {
-            if (manager != null) manager.TrySpawn(recording.Classify(stopThreshold), origin, recording.InitialDirection);
+            bool spawned = manager != null && manager.TrySpawn(recording.Classify(stopThreshold), origin, recording.InitialDirection);
             ResetTrace();
+            if (spawned) ShadowSpawned?.Invoke();
         }
 
         private void ResetTrace() { Phase = TracePhase.Idle; elapsed = 0; recording = null; }
+        public void CancelTrace() { ResetTrace(); }
         private void OnDisable() { ResetTrace(); }
     }
 }

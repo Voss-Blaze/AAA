@@ -167,5 +167,29 @@ namespace ShadowTrace.Tests
             for (int i = 1; i < 8; i++)
                 Assert.IsTrue(Physics2D.GetIgnoreCollision(manager.Actors[0].Shape, manager.Actors[i].Shape));
         }
+
+        [TestCase(0, 1)] [TestCase(3, 3)] [TestCase(12, 12)]
+        public void ConfiguredCapacityLimitsSpawningAndReusesDeletedNumber(int configured, int expected)
+        {
+            objects.Remove(manager.gameObject);
+            Object.DestroyImmediate(manager.gameObject);
+            var root = new GameObject("Configured manager");
+            root.SetActive(false); objects.Add(root);
+            manager = root.AddComponent<ShadowManager>();
+            manager.maxShadows = configured; manager.player = player; manager.shadowPrefab = prefab;
+            root.SetActive(true);
+            Assert.AreEqual(expected, manager.Capacity);
+            for (int i = 0; i < expected; i++) Assert.IsTrue(manager.TrySpawn(ShadowKind.Stay, Vector2.zero, 0));
+            Assert.IsTrue(manager.Full); Assert.IsFalse(manager.TrySpawn(ShadowKind.Stay, Vector2.zero, 0));
+            int hole = expected / 2;
+            manager.Select(hole);
+            Object.DestroyImmediate(manager.Actors[hole].gameObject);
+            Assert.AreEqual(-1, manager.SelectedSlot); Assert.IsFalse(manager.Full);
+            Assert.IsTrue(manager.TrySpawn(ShadowKind.Stay, Vector2.zero, 0));
+            Assert.AreEqual(hole + 1, manager.Actors[hole].Number);
+            Assert.AreEqual(expected, manager.Count);
+            manager.Select(expected - 1); manager.CycleSelection();
+            Assert.AreEqual(0, manager.SelectedSlot);
+        }
     }
 }

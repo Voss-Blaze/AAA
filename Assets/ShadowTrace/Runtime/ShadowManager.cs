@@ -6,24 +6,37 @@ namespace ShadowTrace
     {
         public PlayerController2D player;
         public ShadowActor shadowPrefab;
+        [Min(1), Tooltip("同时存在的影子数量上限；在进入 Play 前设置，运行中修改需重新运行生效。")]
+        public int maxShadows = 8;
         [Min(0.1f)] public float groundSearchDistance = 20;
         [Min(0.05f)] public float doubleClickWindow = 0.3f;
         public int SelectedSlot { get; private set; } = -1;
         public string Message { get; private set; }
         public float MessageUntil { get; private set; }
         public int Count => slots.Count;
+        public int Capacity => actors.Length;
         public bool Full => Count >= actors.Length;
         public ShadowActor[] Actors => actors;
-        private readonly ShadowActor[] actors = new ShadowActor[8];
-        private readonly ShadowSlots slots = new ShadowSlots(8);
+        private ShadowActor[] actors;
+        private ShadowSlots slots;
         private bool pendingDelete;
         private float deleteTime;
         private ShadowActor deleteTarget;
 
+        private void Awake()
+        {
+            maxShadows = Mathf.Max(1, maxShadows);
+            actors = new ShadowActor[maxShadows];
+            slots = new ShadowSlots(maxShadows);
+        }
+
+        private void OnValidate() { maxShadows = Mathf.Max(1, maxShadows); }
+
         private void Update()
         {
-            for (int i = 0; i < actors.Length; i++)
+            for (int i = 0; i < Mathf.Min(actors.Length, 9); i++)
                 if (Input.GetKeyDown((KeyCode)((int)KeyCode.Alpha1 + i))) Select(i);
+            if (actors.Length > 9 && Input.GetKeyDown(KeyCode.Tab)) CycleSelection();
 
             float now = Time.unscaledTime;
             // Commit an expired first click before treating a new click as another single click.
@@ -76,6 +89,16 @@ namespace ShadowTrace
             if (SelectedSlot >= 0 && actors[SelectedSlot] != null) actors[SelectedSlot].SetSelected(false);
             SelectedSlot = slot >= 0 && slot < actors.Length && actors[slot] != null ? slot : -1;
             if (SelectedSlot >= 0) actors[SelectedSlot].SetSelected(true);
+        }
+
+        public void CycleSelection()
+        {
+            for (int offset = 1; offset <= actors.Length; offset++)
+            {
+                int slot = (SelectedSlot + offset) % actors.Length;
+                if (actors[slot] != null) { Select(slot); return; }
+            }
+            Select(-1);
         }
 
         private void Remove(ShadowActor actor)

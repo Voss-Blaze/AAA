@@ -12,6 +12,7 @@ namespace ShadowTrace
         public LayerMask worldMask = ~0;
         public int HorizontalInput { get; private set; }
         public bool IsGrounded { get; private set; }
+        public bool IsSprinting => sprint;
         public Rigidbody2D Body { get; private set; }
         public BoxCollider2D Shape { get; private set; }
         public event Action JumpRequested;
