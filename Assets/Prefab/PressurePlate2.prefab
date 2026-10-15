@@ -224,5 +224,5 @@ MonoBehaviour:
   mode: 0
   targetDoor: {fileID: 0}
   pressArea: {fileID: 2339901829521436734}
-  closedSprite: {fileID: 1758787617, guid: afe38daefaff0d94ea6270c484f6903c, type: 3}
-  activeSprite: {fileID: -1159780351, guid: afe38daefaff0d94ea6270c484f6903c, type: 3}
+  closedSprite: {fileID: -1159780351, guid: afe38daefaff0d94ea6270c484f6903c, type: 3}
+  activeSprite: {fileID: 1758787617, guid: afe38daefaff0d94ea6270c484f6903c, type: 3}
