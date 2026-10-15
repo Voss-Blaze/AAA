@@ -7685,6 +7685,35 @@ RectTransform:
   m_AnchoredPosition: {x: -451.37378, y: 839.938}
   m_SizeDelta: {x: -2259.6614, y: -1611.6}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1900000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 208104089}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: becfdd57a09a47fcb5ece51d3134a223, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  menuPanel: {fileID: 1603043820}
+  startButton: {fileID: 804703049}
+  quitButton: {fileID: 1423096892}
+  settingsButton: {fileID: 2017618934}
+  startPanel: {fileID: 1215451598}
+  startOKButton: {fileID: 548690298}
+  startNOButton: {fileID: 1653380515}
+  quitPanel: {fileID: 1997378502}
+  quitOKButton: {fileID: 172697644}
+  quitNOButton: {fileID: 275072805}
+  settingsPanel: {fileID: 1253932279}
+  tutorialButton: {fileID: 1940725668}
+  audioButton: {fileID: 1141097699}
+  backButton: {fileID: 1030101166}
+  tutorialPanel: {fileID: 2028489328}
+  audioPanel: {fileID: 764616417}
+  level1ScenePath: Assets/Scenes/Level 1.unity
 --- !u!1 &1923132160
 GameObject:
   m_ObjectHideFlags: 0
@@ -8937,35 +8966,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2113343391}
   m_CullTransparentMesh: 1
---- !u!114 &1900000001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 208104089}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: becfdd57a09a47fcb5ece51d3134a223, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  menuPanel: {fileID: 1603043820}
-  startButton: {fileID: 804703049}
-  quitButton: {fileID: 1423096892}
-  settingsButton: {fileID: 2017618934}
-  startPanel: {fileID: 1215451598}
-  startOKButton: {fileID: 548690298}
-  startNOButton: {fileID: 1653380515}
-  quitPanel: {fileID: 1997378502}
-  quitOKButton: {fileID: 172697644}
-  quitNOButton: {fileID: 275072805}
-  settingsPanel: {fileID: 1253932279}
-  tutorialButton: {fileID: 1940725668}
-  audioButton: {fileID: 1141097699}
-  backButton: {fileID: 1030101166}
-  tutorialPanel: {fileID: 2028489328}
-  audioPanel: {fileID: 764616417}
-  level1ScenePath: Assets/Scenes/Level 1.unity
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

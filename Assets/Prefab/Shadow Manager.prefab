@@ -47,6 +47,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 0}
   shadowPrefab: {fileID: 2840536028684461658, guid: b858652ea28460f49ae99a4a13115c93, type: 3}
+  uiSettings: {fileID: 11400000, guid: 756f6ed8776636146bbad6a00aeccd4f, type: 2}
   maxShadows: 5
   groundSearchDistance: 20
   doubleClickWindow: 0.3
@@ -67,3 +68,11 @@ MonoBehaviour:
   life: {fileID: 0}
   doors:
   - {fileID: 0}
+  occupiedIcons:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  tooltip: {fileID: 0}
+  tooltipText: {fileID: 0}
