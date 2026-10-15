@@ -1,4 +1,5 @@
 {
   "name": "ShadowTrace.Runtime",
-  "rootNamespace": "ShadowTrace"
+  "rootNamespace": "ShadowTrace",
+  "references": ["Unity.ugui"]
 }

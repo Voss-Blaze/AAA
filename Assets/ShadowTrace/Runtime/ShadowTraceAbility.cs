@@ -30,11 +30,11 @@ namespace ShadowTrace
         /// <summary>The same action as E, also usable by a future input adapter.</summary>
         public void UseTrace()
         {
-            if (!isActiveAndEnabled) return;
+            if (!isActiveAndEnabled || Time.timeScale <= 0) return;
             if (Phase == TracePhase.Preparing)
             {
                 ResetTrace();
-                if (manager != null) manager.ShowMessage("Preparation cancelled.");
+                if (manager != null) manager.ShowNotice(ShadowNotice.PreparationCancelled);
             }
             else if (Phase == TracePhase.Recording)
             {
@@ -44,8 +44,8 @@ namespace ShadowTrace
                 Finish();
             }
             else if (manager == null) Debug.LogWarning("ShadowTraceAbility needs a ShadowManager.", this);
-            else if (manager.Full) manager.ShowMessage("Limit reached: delete a shadow first.");
-            else { Phase = TracePhase.Preparing; elapsed = 0; duration = preparationDuration; }
+            else if (manager.Full) manager.ShowNotice(ShadowNotice.LimitReached);
+            else { manager.ShowMessage(string.Empty); Phase = TracePhase.Preparing; elapsed = 0; duration = preparationDuration; }
         }
 
         private void FixedUpdate()

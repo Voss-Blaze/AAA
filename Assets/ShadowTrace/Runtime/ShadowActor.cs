@@ -31,6 +31,7 @@ namespace ShadowTrace
         private float nextReverse;
         private Color baseColor;
         private bool initialized;
+        private TextMesh numberLabel;
         private readonly RaycastHit2D[] hits = new RaycastHit2D[32];
 
         private void Awake()
@@ -70,6 +71,47 @@ namespace ShadowTrace
             sprite.color = baseColor;
             Physics2D.IgnoreCollision(Shape, player.Shape, true);
             initialized = true;
+            ConfigureNumberLabel();
+        }
+
+        private void ConfigureNumberLabel()
+        {
+            var settings = manager != null ? manager.uiSettings : null;
+            if (settings == null || settings.shadowNumberFont == null) return;
+            if (numberLabel == null)
+            {
+                var labelObject = new GameObject("Shadow Number");
+                labelObject.layer = gameObject.layer;
+                labelObject.transform.SetParent(transform, false);
+                numberLabel = labelObject.AddComponent<TextMesh>();
+            }
+            numberLabel.font = settings.shadowNumberFont;
+            numberLabel.fontSize = settings.shadowNumberFontSize;
+            numberLabel.characterSize = settings.shadowNumberCharacterSize;
+            numberLabel.color = settings.shadowNumberColor;
+            numberLabel.anchor = TextAnchor.LowerCenter;
+            numberLabel.alignment = TextAlignment.Center;
+            numberLabel.text = Number.ToString(settings.shadowNumberFormat, System.Globalization.CultureInfo.InvariantCulture);
+            var renderer = numberLabel.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = settings.shadowNumberFont.material;
+            renderer.sortingLayerID = sprite.sortingLayerID;
+            renderer.sortingOrder = sprite.sortingOrder + 10;
+            LateUpdate();
+        }
+
+        private void LateUpdate()
+        {
+            if (numberLabel == null || manager == null || manager.uiSettings == null) return;
+            var labelTransform = numberLabel.transform;
+            labelTransform.position = new Vector3(Shape.bounds.center.x, Shape.bounds.max.y, transform.position.z)
+                + manager.uiSettings.shadowNumberOffset;
+            labelTransform.rotation = Camera.main != null ? Camera.main.transform.rotation : Quaternion.identity;
+            // Keep numbers upright and equally sized when the actor is scaled or faces the other direction.
+            var scale = transform.lossyScale;
+            labelTransform.localScale = new Vector3(
+                Mathf.Abs(scale.x) > 0.0001f ? 1 / scale.x : 1,
+                Mathf.Abs(scale.y) > 0.0001f ? 1 / scale.y : 1,
+                Mathf.Abs(scale.z) > 0.0001f ? 1 / scale.z : 1);
         }
 
         public void SetSelected(bool selected)

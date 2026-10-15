@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace ShadowTrace
@@ -6,6 +7,9 @@ namespace ShadowTrace
     {
         public PlayerController2D player;
         public ShadowActor shadowPrefab;
+        public ShadowUISettings uiSettings;
+        public event Action SlotsChanged;
+        public event Action<ShadowNotice> NoticeShown;
         [Min(1), Tooltip("同时存在的影子数量上限；在进入 Play 前设置，运行中修改需重新运行生效。")]
         public int maxShadows = 8;
         [Min(0.1f)] public float groundSearchDistance = 20;
@@ -34,11 +38,12 @@ namespace ShadowTrace
 
         private void Update()
         {
+            if (Time.timeScale <= 0) return;
             for (int i = 0; i < Mathf.Min(actors.Length, 9); i++)
                 if (Input.GetKeyDown((KeyCode)((int)KeyCode.Alpha1 + i))) Select(i);
             if (actors.Length > 9 && Input.GetKeyDown(KeyCode.Tab)) CycleSelection();
 
-            float now = Time.unscaledTime;
+            float now = Time.time;
             // Commit an expired first click before treating a new click as another single click.
             if (pendingDelete && now - deleteTime > doubleClickWindow) CommitDelete();
             if (!Input.GetKeyDown(KeyCode.R)) return;
@@ -46,7 +51,7 @@ namespace ShadowTrace
             {
                 pendingDelete = false; deleteTarget = null;
                 ClearAll();
-                ShowMessage("All shadows cleared.");
+                ShowNotice(ShadowNotice.Cleared);
             }
             else
             {
@@ -64,15 +69,16 @@ namespace ShadowTrace
 
         public bool TrySpawn(ShadowKind kind, Vector2 origin, int direction)
         {
-            if (Full) { ShowMessage("Limit reached: delete a shadow first."); return false; }
+            if (Time.timeScale <= 0) return false;
+            if (Full) { ShowNotice(ShadowNotice.LimitReached); return false; }
             if (player == null || shadowPrefab == null)
-            { ShowMessage("Missing player or shadow prefab reference."); return false; }
+            { ShowNotice(ShadowNotice.MissingReferences); return false; }
             var shape = shadowPrefab.GetComponent<BoxCollider2D>();
             Vector2 size = Vector2.Scale(shape.size, shadowPrefab.transform.localScale);
             Physics2D.SyncTransforms();
             if (!TracePhysics.SpawnPosition(origin, kind, size, shadowPrefab.worldMask,
                 groundSearchDistance, out var position))
-            { ShowMessage("Cannot spawn: no ground or the starting position is blocked."); return false; }
+            { ShowNotice(ShadowNotice.SpawnBlocked); return false; }
             int slot = slots.Allocate();
             var actor = Instantiate(shadowPrefab, position, Quaternion.identity);
             actor.name = "Shadow " + (slot + 1) + " - " + kind;
@@ -80,12 +86,14 @@ namespace ShadowTrace
             foreach (var other in actors)
                 if (other != null) Physics2D.IgnoreCollision(actor.Shape, other.Shape, true);
             actors[slot] = actor;
-            ShowMessage("Created #" + (slot + 1) + ": " + kind);
+            SlotsChanged?.Invoke();
+            ShowNotice(ShadowNotice.Spawned);
             return true;
         }
 
         public void Select(int slot)
         {
+            if (Time.timeScale <= 0) return;
             if (SelectedSlot >= 0 && actors[SelectedSlot] != null) actors[SelectedSlot].SetSelected(false);
             SelectedSlot = slot >= 0 && slot < actors.Length && actors[slot] != null ? slot : -1;
             if (SelectedSlot >= 0) actors[SelectedSlot].SetSelected(true);
@@ -116,6 +124,7 @@ namespace ShadowTrace
             if (SelectedSlot == slot) SelectedSlot = -1;
             actors[slot] = null;
             slots.Release(slot);
+            SlotsChanged?.Invoke();
         }
 
         public void ClearAll()
@@ -124,7 +133,13 @@ namespace ShadowTrace
         }
 
         public void ShowMessage(string message)
-        { Message = message; MessageUntil = Time.unscaledTime + 3; }
+        { Message = message; MessageUntil = Time.time + (uiSettings != null ? uiSettings.noticeDuration : 0); }
+
+        public void ShowNotice(ShadowNotice notice)
+        {
+            ShowMessage(uiSettings != null ? uiSettings.Notice(notice) : string.Empty);
+            NoticeShown?.Invoke(notice);
+        }
 
         private void OnDisable() { pendingDelete = false; deleteTarget = null; }
     }

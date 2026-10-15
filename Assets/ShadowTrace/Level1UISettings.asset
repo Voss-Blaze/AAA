@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61ffeebf0030405fa2095bda6167a2a2, type: 3}
+  m_Name: Level1UISettings
+  m_EditorClassIdentifier: 
+  preparationFormat: '{0}'
+  recordingFormat: "\u6B63\u5728\u751F\u6210\uFF1A{0}"
+  spawned: "\u5F71\u5B50\u51FA\u73B0"
+  limitReached: "\u5F71\u5B50\u5DF2\u8FBE\u4E0A\u9650\uFF0C\u8BF7\u5148\u5220\u9664\u5F71\u5B50"
+  preparationCancelled: "\u5DF2\u53D6\u6D88\u51C6\u5907"
+  cleared: "\u6240\u6709\u5F71\u5B50\u5DF2\u6E05\u9664"
+  missingReferences: "\u5F71\u5B50\u751F\u6210\u914D\u7F6E\u7F3A\u5931"
+  spawnBlocked: "\u65E0\u6CD5\u751F\u6210\u5F71\u5B50\uFF1A\u6CA1\u6709\u5730\u9762\u6216\u4F4D\u7F6E\u88AB\u963B\u6321"
+  noticeDuration: 2
+  shadowNumberFont: {fileID: 12800000, guid: 3679a15b207597f4d9e0c6a46ba39568, type: 3}
+  shadowNumberFormat: '00'
+  shadowNumberOffset: {x: 0, y: 0.25, z: 0}
+  shadowNumberFontSize: 64
+  shadowNumberCharacterSize: 0.08
+  shadowNumberColor: {r: 1, g: 1, b: 1, a: 1}

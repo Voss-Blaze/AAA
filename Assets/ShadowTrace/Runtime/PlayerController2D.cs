@@ -31,6 +31,11 @@ namespace ShadowTrace
 
         private void Update()
         {
+            if (Time.timeScale <= 0)
+            {
+                HorizontalInput = 0; sprint = false; jumpRequested = false;
+                return;
+            }
             HorizontalInput = (Input.GetKey(KeyCode.D) ? 1 : 0) - (Input.GetKey(KeyCode.A) ? 1 : 0);
             sprint = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
             if (Input.GetKeyDown(KeyCode.Space)) RequestJump();
@@ -39,6 +44,7 @@ namespace ShadowTrace
         /// <summary>Broadcast intent even if the player is airborne; each follower checks its own ground.</summary>
         public void RequestJump()
         {
+            if (Time.timeScale <= 0) return;
             jumpRequested = true;
             JumpRequested?.Invoke();
         }

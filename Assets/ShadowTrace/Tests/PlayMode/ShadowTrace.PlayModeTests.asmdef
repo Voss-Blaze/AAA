@@ -1,5 +1,5 @@
 {
   "name": "ShadowTrace.PlayModeTests",
-  "references": ["ShadowTrace.Runtime"],
+  "references": ["ShadowTrace.Runtime", "Unity.ugui"],
   "optionalUnityReferences": ["TestAssemblies"]
 }
