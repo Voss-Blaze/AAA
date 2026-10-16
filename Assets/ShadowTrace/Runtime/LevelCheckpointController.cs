@@ -12,6 +12,8 @@ namespace ShadowTrace
         public ShadowLamp[] lamps;
         public Image deathBlackout;
         public string menuScenePath;
+        /// <summary>终局返回的目标场景路径，供 LevelStoryController 做黑屏异步转场。</summary>
+        public string MenuScenePath => menuScenePath;
         public ShadowTraceHUD hud;
         [Min(0)] public float deathFadeDuration = 0.35f;
         [Min(0)] public float deathBlackDuration = 0.35f;
@@ -35,11 +37,16 @@ namespace ShadowTrace
             if (lamps != null) foreach (var lamp in lamps) if (lamp != null) lamp.Lit += SaveCheckpoint;
         }
 
-        public bool CompleteGame()
+        /// <summary>
+        /// 终局清档：只负责抹除存档并停掉游戏音效、恢复时间流动；
+        /// 场景跳转交给 LevelStoryController 在黑屏下异步完成。返回 false 表示清档失败、可重试。
+        /// </summary>
+        public bool ClearGameProgress()
         {
             if (returningToMenu || !SaveGameService.Current.BeginNewGame()) return false;
             returningToMenu = true;
-            ReturnToMenu();
+            GameAudioManager.Instance?.StopGameplaySounds();
+            Time.timeScale = 1;
             return true;
         }
 

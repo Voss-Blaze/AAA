@@ -1,200 +1,191 @@
-# AAA
+# 影迹 Shadow Trace
 
-基于 Unity 和 Universal Render Pipeline（URP）的 2D 平台游戏原型。核心玩法是根据玩家的移动输入生成不同类型的影子，利用影子的移动、推动和平台能力与场景交互。
+基于 Unity + Universal Render Pipeline（URP）的 2D 平台解谜游戏。核心玩法是「录制」玩家短短数秒的移动意图，生成不同行为模式的**影子**，再利用影子去按压机关、点亮路灯、推动箱子和搭出平台，玩家自己则与影子配合闯关。
 
-目前已实现玩家控制、四类影迹玩法、共用五状态动画器，以及地刺、路灯、按钮和大门交互。`SampleScene` 已接入实验玩法，并保留独立演示场景。正式关卡和菜单尚未完成完整游戏流程与接入。
+游戏已具备完整流程：主菜单（新游戏 / 继续 / 教程 / 音频设置）→ Level 1 关卡（开场剧情、路灯存档、门与压板、影子驱动的移动平台、终点）→ 两段终局剧情 → 黑屏丝滑切回菜单。
 
 ## 开发环境
 
-- Unity Editor：`2022.3.62f3c1`（请使用匹配版本）
-- Universal RP：`14.0.12`
-- Unity Test Framework：`1.1.33`
-- 输入方式：传统 Input Manager；Active Input Handling 需保留 Input Manager 或 Both。
-- 项目依赖记录在 `Packages/manifest.json` 和 `Packages/packages-lock.json`
+- Unity Editor：**2022.3.62f3c1**（请用 Hub 安装匹配小版本）
+- Universal RP：14.0.12
+- Unity Test Framework：1.1.33
+- 输入：传统 Input Manager（Active Input Handling 设为 Input Manager 或 Both）
+- 依赖见 `Packages/manifest.json`
 
-## 打开与运行
+## 快速开始
 
-1. 克隆仓库。
-2. 在 Unity Hub 中添加仓库根目录，并使用上述 Unity 版本打开。
-3. 等待依赖恢复与资源导入完成。
-4. 打开 `Assets/Scenes/SampleScene.unity`，点击 Play 体验角色动画和影迹玩法；也可打开 `Assets/ShadowTrace/Scenes/ShadowTraceDemo.unity` 运行独立演示。
+1. 克隆仓库，用 Unity Hub 以 **2022.3.62f3c1** 打开仓库根目录。
+2. 等待包恢复与资源导入。
+3. Build Settings 中的场景顺序（首场景为菜单）：
 
-点击 Game 窗口以接收键盘输入。也可使用 **Tools → Shadow Trace → Open Demo Scene** 打开演示。
-
-演示场景在运行时生成玩家、地面、墙壁、平台、台阶和可推动箱子，并配置影迹管理器、HUD 和跟随相机。该场景已列为 Build Settings 的首个场景。
-
-如果演示资源缺失，使用 **Tools → Shadow Trace → Create Demo Assets** 重建。重建前请保存当前场景；该操作保留已有预制体配置，但会覆盖演示场景。
-
-## 已实现功能
-
-### 玩家控制
-
-- 左右移动、疾跑和落地跳跃，无二段跳。
-- 地面检测、重力和实体碰撞。
-- 相机平滑跟随，支持位置偏移和跟随速度配置。
-
-### 影迹准备与录制
-
-按 `E` 开始一轮影迹：**准备 3 秒 → 录制最多 6 秒 → 生成影子**。
-
-- 准备和录制期间均可正常移动、疾跑和跳跃。
-- 准备期间再次按 `E` 取消；录制期间再次按 `E` 提前结束。
-- 录制超时自动结束，生成起点取准备结束时的玩家位置。
-- 分类依据左右输入意图；撞墙时仍按住方向键也算移动，原地跳跃不改变类型。
-- 录制用于判断类型，不重播完整移动轨迹、疾跑或跳跃动作。
-
-### 四类影子
-
-| 类型 | 生成条件 | 生成后的行为 |
+| # | 场景 | 用途 |
 | --- | --- | --- |
-| 停留型 Stay | 全程无有效左右输入 | 在录制起点向下寻找地面，生成后固定不动 |
-| 趋近型 Approach | 有单向移动，结束前连续停止不足 0.3 秒 | 沿首次移动方向前进，可推动标记为可推动的箱子；受阻后永久停止，成为玩家可站立的平台 |
-| 回避型 Avoid | 录制中发生过左右反向，优先于其他分类规则 | 沿首次移动方向前进，遇到障碍反向往返 |
-| 跟随型 Follow | 有单向移动且未反向，结束前连续停止至少 0.3 秒 | 响应当前玩家的左右移动和跳跃输入，各自独立受地形与重力影响 |
+| 0 | `Assets/Scenes/Log.unity` | 主菜单（游戏入口） |
+| 1 | `Assets/Scenes/Level 1.unity` | 正式关卡，完整玩法与剧情流程 |
+| 2 | `Assets/ShadowTrace/Scenes/ShadowTraceDemo.unity` | 运行时生成的核心玩法演示沙盒 |
+| 3 | `Assets/Scenes/SampleScene.unity` | 机制试验场（移动平台机关在此接线） |
 
-跟随型使用玩家的普通移动速度，不随 Shift 疾跑，也不追赶玩家位置或恢复此前的间距。玩家与各个跟随型分别判断是否落地，因此可以在不同楼层移动和跳跃。
-
-停留型、回避型和跟随型不会成为玩家平台。趋近型移动时玩家可以穿过它，停止后才开启与玩家的实体碰撞；若停止时双方重叠，会等待玩家离开后再开启碰撞。影子之间互不阻挡。动态影子没有悬崖保护、寻路或自动跳跃。
-
-### 影子管理与物理交互
-
-- 同时默认最多存在 **8 个影子**；运行前可在 Shadow Manager 的 **Max Shadows** 字段设置上限（最小 1），满员时不能开始新一轮准备。运行中修改需重新运行生效，HUD 自动显示本次运行的实际上限。
-- 支持编号选择、黄色高亮、单个删除和全部清空。
-- 删除后复用最小空闲编号，其他影子的编号保持不变。
-- 影子持续存在，直到被删除、外部逻辑销毁或场景卸载。
-- 生成前检查空间占用；停留型还会检查是否能找到地面，失败时不占用编号。
-- 可推动箱子采用动态刚体；趋近型遇到推不动的箱子或墙壁时会停止。
-
-### HUD 与开发工具
-
-- 显示操作提示、准备 / 录制倒计时和录制中的预计影子类型。
-- 显示影子数量、选中编号、生成失败与数量上限等提示。
-- 影子头顶显示编号和类型，停止的趋近型额外标记 `[Platform]`。
-- 提供玩家、影子和箱子预制体，以及演示资源生成菜单。
-
-### 共用角色动画状态机
-
-玩家和影子使用 `Assets/Animation/Player.controller` 与同一套五个动画片段，各自的 Animator 独立播放。整数参数 `MotionState` 对应：
-
-| 参数值 | 状态 | 播放条件 |
-| --- | --- | --- |
-| 0 | Idle | 落地且实际水平速度不超过 0.05 |
-| 1 | Walk | 落地且实际水平移动 |
-| 2 | Run | 玩家落地、实际水平移动并按住 Shift；影子不疾跑 |
-| 3 | Jump | 起跳或离地，包含从平台边缘下落；落地后退出 |
-| 4 | Shadowtrace | 玩家成功生成影子时处于地面静止状态，播放 0.5 秒 |
-
-移动或离地立即打断 Shadowtrace，生成动作不锁定操作。准备与录制期间仍按移动状态播放动画；生成失败不播放动作，空中按 Space 不重新播放起跳。Idle、Walk、Run 循环；Jump 播完保持末帧直至落地，Shadowtrace 不循环。
-
-动画器和精灵放在 `Visual` 子对象，碰撞体留在根对象，尺寸不随动画变化。类型颜色、透明度与选中高亮继续生效。可通过 **Tools → Shadow Trace → Configure Shared Actor Animation** 重新配置并保存动画器、预制体和 SampleScene；正常运行无需执行该工具。
-
-### 场景交互
-
-| 物品 | 行为 |
-| --- | --- |
-| `spike1` 地刺 | 仅玩家触碰死亡，立即暂停游戏并播放红色闪烁 / 淡出效果；影子免疫 |
-| 路灯 | 仅影子触碰点亮，`light1` → `light2`；本场景内保持点亮，暂不保存到硬盘，也不是复活点 |
-| 持续型按钮 | 影子必须在按钮上方持续按压；最后一个影子离开、禁用或被删除后关闭 |
-| 短暂型按钮 | 影子按压一次后保持开启，直到场景重置 |
-| 按钮外观 | 关闭为 `PressurePlate1`，开启为 `PressurePlate2`；玩家和侧面擦碰不触发 |
-| 大门 | 所有绑定按钮满足条件后解锁，图片 `door1` → `door2`，仍保持实体阻挡 |
-| F 通行 | 玩家接触已解锁门后按 F，临时解除玩家与门的碰撞，清空全部影子并取消当前准备 / 录制 |
-
-多个按钮可绑定同一扇门；门的组合条件支持 All（默认全部满足）和 Any（任意满足）。持续按钮在影子清空后释放，门图片可立即关闭，但已经按 F 的玩家仍能安全通过；离开交互范围后才恢复碰撞。
-
-SampleScene 默认将现有按钮绑定到现有门，按钮为 Sustained 持续型，路灯和按钮初始关闭。可在 Inspector 配置按钮 Mode / Target Door、门 Requirement Mode 和两种状态精灵。死亡后暂不提供重生界面，在编辑器停止 Play 后重新运行即可。
-
-**Tools → Shadow Trace → Configure Scene Interactions** 可重新保存交互预制体和场景绑定，保留已有按钮模式与目标设置，不重复添加组件。详细配置见 [场景交互使用文档](Docs/场景交互使用文档.md)。
+体验完整游戏：打开 **Log** 场景 Play，点击「开始」→ 确认新游戏即可进入 Level 1。
+体验单项机制：打开 SampleScene 或用 **Tools → Shadow Trace → Open Demo Scene**。
 
 ## 操作说明
 
 | 按键 | 功能 |
 | --- | --- |
-| A / D | 左右移动；同时按下视为无水平输入 |
-| 左 / 右 Shift | 玩家疾跑 |
-| Space | 玩家及所有跟随型分别尝试跳跃，仅自身落地时可起跳 |
-| E | 开始准备 / 取消准备 / 提前结束录制 |
-| F | 接触已解锁的大门时通行，并清空影子、取消准备 / 录制 |
-| 主键盘 1–9 | 选择对应编号的影子，范围不超过配置上限；选择空编号时取消选择 |
-| Tab | 上限超过 9 时循环选择所有现存影子，包含编号 10 及以上 |
-| R | 删除选中影子 |
-| 连按两次 R | 清空全部影子，无需选中 |
+| A / D | 左右移动（同时按视为无输入） |
+| 左 / 右 Shift | 疾跑 |
+| Space | 跳跃（无二段跳）；跟随型影子各自判定起跳 |
+| E | 开始影迹准备 / 准备中再按取消 / 录制中再按提前结束 |
+| F | 推进剧情对白；接触已解锁大门时通行（清空影子并取消录制） |
+| 鼠标左键 | 推进剧情对白 |
+| H 或右上角按钮 | 暂停 / 继续（剧情与死亡动画期间禁用） |
+| Q | 放弃当前关卡，返回主菜单 |
+| 主键盘 1–5 | 选择对应编号影子；选空编号取消选择 |
+| Tab | 影子上限超过 5 个时循环切换选择   |
+| R | 0.3 秒窗口后删除选中的影子 |
+| 连按两次 R | 清空全部影子 |
 
-R 的双击窗口默认 0.3 秒，单次删除在窗口结束后执行。数字键选择只影响高亮和删除，不决定跟随型是否响应移动与跳跃。
+数字键只影响高亮和删除目标，不影响跟随型影子是否响应输入。
 
-## 场景与资源状态
+## 影迹系统
 
-| 内容 | 当前状态 |
-| --- | --- |
-| `ShadowTraceDemo` | 核心玩法演示入口，已列为 Build Settings 首个场景 |
-| `SampleScene` | 已接入玩家、影迹、动画、HUD、地刺死亡、路灯、按钮和 F 大门通行，已加入 Build Settings |
-| `Assets/Scenes/Level 1.unity` | 已搭建地图与装饰，尚未接入玩家及影迹系统，未加入当前 Build Settings |
-| 大门、压力板、路灯、地刺 | 已实现状态与交互；预制体可复用，SampleScene 已配置 |
-| 移动 / 下落平台及其他机关 | 已有外观资源，尚未实现移动、下落及其他机关逻辑 |
-| 玩家与影子动画 | 已接入同一套 Idle / Walk / Run / Jump / Shadowtrace 动画器；原趋近型专属动画资源保留但未使用 |
-| 主菜单、暂停、弹窗及按钮 | 已有视觉资源，尚未接入菜单控制和按钮交互 |
+### 录制与分类
 
-目前尚未实现通关判定、关卡切换、自动重生、存档和音效控制系统。素材或预制体存在不代表对应玩法已经完成。
+按 `E` 开始一轮影迹：**准备 3 秒 → 录制最多 6 秒 → 生成影子**。准备 / 录制中可正常移动、疾跑、跳跃；生成起点是准备结束瞬间玩家所在位置。系统只按左右输入**意图**分类，不回放完整轨迹、不重播疾跑与跳跃；原地跳跃不改变类型，撞墙时按住方向仍算移动。
 
-## 接入正式关卡
+| 影子 | 生成条件 | 行为 |
+| --- | --- | --- |
+| 停留 Stay（蓝） | 全程无有效左右输入 | Kinematic、无重力，在起点正下方找地面后**原地不动**，可用于踩机关、压压板 |
+| 趋近 Approach（橙） | 单向移动，结束前停顿不足 0.3 秒 | 沿首向匀速前进，可推可推动箱子；撞墙或推不动持续 0.4 秒后永久停止，停止后成为玩家可站立的平台 |
+| 回避 Avoid（紫） | 录制中发生过左右反向（最高优先级） | 沿首向前进，遇障碍周期性反向往返 |
+| 跟随 Follow（绿） | 单向移动且结束前停顿至少 0.3 秒 | 镜像玩家的左右与跳跃输入，与玩家各自独立受重力、地形和楼层约束 |
 
-1. 将 `Assets/ShadowTrace/Prefabs/Player.prefab` 拖入关卡。
-2. 创建对象并添加 `ShadowManager`，关联场景玩家和 `Shadow.prefab`。
-3. 将管理器关联到玩家的 `ShadowTraceAbility.Manager`。需与 SampleScene 的原尺寸角色配套时，使用 `SampleShadow.prefab`；演示预制体采用较小的物理尺寸。
-4. 添加 `ShadowTraceHUD`，关联能力组件和管理器。
-5. 为正交相机添加 `TraceCameraFollow`，关联玩家作为目标。
-6. 为地面和墙壁配置非 Trigger 的 `Collider2D`。
-7. 使用 `PushableBox.prefab` 放置箱子，或为已有箱子添加动态 `Rigidbody2D`、实体碰撞体和 `PushableBody2D`。
+其他规则：
 
-正式关卡不要同时挂载 `ShadowTraceDemo`，否则会额外生成演示玩家和场景。影子专属机关可通过 `ShadowActor` 的 `Kind`、`Number` 和 `Stopped` 判断类型、编号及停止状态。
+- 默认最多并存 5** 个**影子，可在 Shadow Manager 的 Max Shadows 调整（运行前生效），满员不能开始新一轮。
+- 影子之间互不碰撞；除停止的趋近型外，影子不阻挡玩家。趋近型停止时若与玩家重叠，会等玩家离开后再开启实体碰撞。
+- 生成前做空间占用检测，停留型还要求下方有地面；失败不消耗编号。
+- 影子持续存在直到被删除、随场景卸载或被大门通行等逻辑清空。
+- 动态影子没有悬崖保护、寻路和自动跳跃。
 
-完整规则、参数、物理约束和接入细节见 [影迹系统使用文档](Docs/影迹系统使用文档.md)。
+### 核心组件
 
-## 测试与验证
+- `PlayerController2D`：移动 / 疾跑 / 跳跃、地面检测（`TracePhysics`）。
+- `ShadowTraceAbility`：E 键录制状态机（Idle → Preparing → Recording）。
+- `TraceClassification`：按输入意图分类（Stay / Approach / Avoid / Follow）。
+- `ShadowManager`：影子槽位、编号复用、选择、删除、`TrySpawn`。
+- `ShadowActor`：四类影子的运行时行为、类型配色、头顶编号。
 
-打开 **Window → General → Test Runner** 运行：
+## 关卡机关与交互
 
-- **EditMode**：影子分类、停止阈值、反向优先级、数量限制和编号复用。
-- **PlayMode**：推动箱子、受阻停止、平台碰撞、回避反向、地面定位，以及跟随型的移动、独立跳跃、撞墙、疾跑间距变化和跨楼层行为。
-- **演示启动测试**：演示场景引用配置、玩家落地、管理器、HUD 和相机。
-- **动画与 SampleScene 测试**：共用动画器与片段设置、实际速度和疾跑切换、离地与落地、生成动作的成功条件及打断、四类影子独立动画、场景引用和地面碰撞。
-- **交互测试**：玩家 / 影子权限、顶部按压、多影子释放、短暂按钮保持、多按钮组合、F 通行与防夹保护、取消录制、路灯点亮和暂停中的死亡效果。
+| 对象 | 脚本 | 行为 |
+| --- | --- | --- |
+| 地刺 `spike1` | `SpikeHazard` + `PlayerLife` | 仅玩家触碰死亡：红色闪烁淡出 0.6 秒（时间暂停）后返回菜单；影子免疫 |
+| 路灯 `light2` | `ShadowLamp` | 仅影子触碰点亮并播放音效，同时作为**检查点**写入存档；复活点做地面与地刺安全校验 |
+| 持续型压板 | `ShadowPressurePlate`（Sustained） | 只认影子的顶部踩踏；最后一个影子离开 / 被删后释放 |
+| 短暂型压板 | `ShadowPressurePlate`（Latched） | 影子踩一次即永久保持，直到场景重置；玩家与侧面擦碰不触发 |
+| 大门 `door1` | `InteractiveDoor` | 所有绑定压板满足 All（默认）/ Any 条件后解锁，开门图但仍保持实体阻挡 |
+| F 通行 | `InteractiveDoor.TryPass` | 玩家在交互范围内按 F 才获得本次通行权限，同时清空影子、取消录制；附近显示 `[F]` 提示 |
+| 终点 `End` | `EndGameTrigger` | 只接受玩家（影子无效），触发两段终局剧情 |
+| 移动平台 | `MovingPlatform` + `ShadowMoverPlate` | 见下节 |
 
-使用文档记录此前在 Unity `2022.3.62f3c1` 隔离副本中完成了 **29 项自动测试，全部通过**。该记录不代表当前工作区每次修改后的测试结果；键盘手感、动画与画面仍需在 Game 窗口手动验收。
+### 影子驱动的移动平台（SampleScene）
 
-2026-10-14 共用动画接入验证：在隔离副本运行 **12 项 EditMode + 30 项 PlayMode，共 42 项全部通过**；使用图形模式渲染五个动画状态检查角色比例、脚底锚点和影子着色。键盘操作手感仍需在 Game 窗口验收。
+- `ShadowMoverPlate`（压板）：**默认只认影子，玩家踩压无效**（Inspector 的 Player Can Press 可手动放开）。影子进入 Press Area 即触发，压板切换按压精灵。
+  - **Patrol（默认）**：踩着平台朝终点走，松开沿原路返回起点停住。
+  - **Toggle**：按一下走向另一端；移动途中再按会等走到端点后立刻反向；必须离开后再踩才算新的一次。
+- `MovingPlatform`（平台）：Kinematic 刚体 + `MovePosition`，在原点与「原点 + Offset」之间按 Speed 往返；自动驮运站在顶面的角色（玩家与影子都可乘坐）；Scene 视图有蓝色 gizmo 显示轨迹两端。
+- 一键接线：选中 SampleScene 后执行 **Tools → Shadow Trace → Setup Moving Platform (SampleScene)**，工具会给 `moveplatform` 补 Kinematic 刚体与按精灵轮廓生成的碰撞体、给 `PressurePlate1` 挂机关脚本并关闭旧的压板脚本。执行后 Ctrl+S 保存场景即可 Play。
 
-同日场景交互接入验证：**14 项 EditMode + 39 项 PlayMode，共 53 项全部通过**，包含原有玩法和新增交互测试；另渲染检查关闭 / 开启资源及死亡着色预览，并校准中央按钮支撑面。
+## 游戏流程、剧情与存档
+
+- **开场剧情**：进入 Level 1 约 2 秒后播放开场对白；已有存档时跳过。经过大门还会触发对应的门剧情。对白期间 `Time.timeScale = 0`，按 F 或鼠标左键逐句推进。
+- **暂停**：H 键或右上角暂停按钮，遮罩盖住画面，音频切换到暂停状态。
+- **检查点**：影子点亮路灯即存档（HUD 提示保存成功）。存档为 `Application.persistentDataPath/checkpoint.json`，采用临时文件 + 原子替换写入，内容含场景路径、路灯 ID 与坐标。
+- **死亡**：地刺击杀后播放红色闪烁淡出，随后回到主菜单；可在菜单选「继续」回到最近一次点亮的路灯。存档损坏或场景不匹配时菜单会弹出无存档提示。
+- **返回菜单**：Q 键随时返回（剧情 / 死亡中禁用）。
+- **终局**：碰到 End → 第一段普通对白 → 第二段黑底白字（EndWord）。最后一句确认后白字淡出，**黑底保持全黑不退场**，由跨场景常驻的 `SceneFadeOverlay` 接管：纯黑状态下异步加载 Log 场景，激活后黑幕用 0.6 秒缓缓淡开（`Ending Reveal Duration` 可调），全程不会闪出 Level 1 画面；通关同时清除存档。
+
+## UI 与音频
+
+- HUD（`ShadowTraceHUD`）：影子槽位图标、操作提示、准备 / 录制倒计时与预计影子类型、保存成功 / 数量上限等优先提示。
+- 主菜单（`MainMenuController`，Log 场景）：开始（二次确认新游戏，会清空旧档）、继续（无有效存档时弹窗提示）、教程与音频设置页签、退出（二次确认）。
+- 音频（`GameAudioManager`，`Game Audio.prefab`，DontDestroyOnLoad 单例）：按场景播放背景音乐；脚步声随移动 / 疾跑切换；落地、开门、点灯、压板、H 交互、时钟等音效；主 / 音乐 / 音效三路音量与开关持久化到 PlayerPrefs，菜单内音频面板实时调节。
+
+## 动画
+
+玩家与四类影子共用 `Assets/Animation/Player.controller` 与同一组片段，由 `ActorAnimationDriver` 驱动整数参数 `MotionState`：
+
+| 值 | 状态 | 条件 |
+| --- | --- | --- |
+| 0 | Idle | 落地且水平速度近零 |
+| 1 | Walk | 落地移动 |
+| 2 | Run | 玩家落地移动且按住 Shift（影子不疾跑） |
+| 3 | Jump | 离地（含走出平台下落），落地退出 |
+| 4 | Shadowtrace | 成功生成影子且地面静止，播 0.5 秒，移动 / 离地立即打断 |
+
+Animator 与精灵位于 `Visual` 子物体，碰撞体留在根节点，动画不影响物理尺寸；影子的类型配色、半透明与选中黄高亮持续生效。可用 **Tools → Shadow Trace → Configure Shared Actor Animation** 重建接线。
+
+## 编辑器工具（Tools 菜单）
+
+- **Shadow Trace → Open Demo Scene / Create Demo Assets**：打开演示场景或重建演示资源。
+- **Shadow Trace → Configure Shared Actor Animation**：配置共用动画器、预制体与 SampleScene。
+- **Shadow Trace → Configure Scene Interactions**：重建交互预制体与场景绑定（保留已有模式与目标）。
+- **Shadow Trace → Setup Moving Platform (SampleScene)**：一键接线移动平台机关。
+- 顶层工具菜单中的 **Square 障碍碰撞体批量工具**（`Assets/Editor/SquareObstacleColliderTool.cs`）：按精灵可见轮廓为 Square 前缀物体批量生成 / 校准 BoxCollider2D，幂等可重复执行。
 
 ## 目录结构
 
 ```text
 Assets/
-├── Art/                     美术、动画、UI 和环境资源
-├── MapPrefabs/              地图与机关外观预制体
-├── Scenes/                 基础场景与 Level 1
-├── Settings/               URP 与 2D Renderer 配置
+├── Animation/               共用 Animator Controller 与动画片段
+├── Art/                     角色与影子序列帧、环境、背景、UI 美术
+├── Music/                   音乐与音效（mp3）
+├── Prefab/                  Level 1 用预制体（Player、End、灯、门、压板、地刺、平台等）
+├── MapPrefabs/              地图拼装用 Square 预制体
+├── Scenes/                  Log（菜单）、Level 1、SampleScene
+├── Settings/                URP 资源与 2D Renderer
+├── Editor/                  工程级编辑器工具
 └── ShadowTrace/
-    ├── Art/                演示图像与物理材质
-    ├── Editor/             演示资源生成与场景菜单
-    ├── Prefabs/            玩家、影子和可推动箱子
-    ├── Runtime/            控制、分类、物理、管理器、HUD 和相机
-    ├── Scenes/             核心玩法演示场景
-    └── Tests/              EditMode 与 PlayMode 测试
-Docs/                       玩法与关卡接入文档
-Packages/                   包依赖及锁定文件
-ProjectSettings/            Unity 项目设置
+    ├── Runtime/             全部玩法脚本（asmdef: ShadowTrace.Runtime）
+    ├── Editor/              Shadow Trace 编辑器工具（asmdef: ShadowTrace.Editor）
+    ├── Prefabs/             Player、Shadow、PushableBox 等系统预制体
+    ├── Scenes/              ShadowTraceDemo 演示场景
+    ├── Level1UISettings.asset  Level 1 文案与 HUD 配置
+    └── Tests/               EditMode / PlayMode 测试
+Docs/                        分系统文档（见下方索引）
+Packages/                    包依赖与锁文件
+ProjectSettings/             项目设置
 ```
 
-资源应与对应 `.meta` 文件一起保留，以维护引用。`Library/`、`Temp/`、`Logs/` 和 `UserSettings/` 等生成目录由 Git 忽略，无需提交。
+资源需连同 `.meta` 一起保留；`Library/`、`Temp/`、`Logs/`、`UserSettings/` 为生成目录，不入库。
+
+## 文档索引（Docs/）
+
+- [影迹系统使用文档](Docs/影迹系统使用文档.md)：影子分类、物理与接入细节
+- [场景交互使用文档](Docs/场景交互使用文档.md)：压板、大门、地刺、路灯配置
+- [MainMenu.md](Docs/MainMenu.md)：主菜单结构与按钮逻辑
+- [CheckpointSave.md](Docs/CheckpointSave.md)：检查点存档格式与复活流程
+- [Level1UI.md](Docs/Level1UI.md)：Level 1 HUD、暂停与剧情 UI
+- [GameAudio.md](Docs/GameAudio.md)：音频单例、音量与场景音乐
+- [ShadowInteractionFixes.md](Docs/ShadowInteractionFixes.md)：交互问题修复记录
+
+## 测试
+
+通过 **Window → General → Test Runner** 运行：
+
+- **EditMode**：影子分类、停止阈值、反向优先级、槽位编号复用等纯逻辑测试。
+- **PlayMode**：推动箱子、受阻停止变平台、回避往返、跟随型移动 / 独立跳跃 / 跨楼层、压板权限与多板组合、F 通行、路灯存档、暂停 / 死亡、主菜单流程、Level 1 完整剧情与终局转场（含黑幕全程不穿帮、转场后自毁）。
+
+最近一次终局改动（黑屏异步转场）在 Unity `2022.3.62f3c1` 隔离副本中验证：`LevelStoryTests` 5 项全部通过。键盘手感、动画与画面效果仍需在 Game 窗口人工验收。
 
 ## 常见问题
 
-- **地图显示紫色，材质显示 Missing**：确认 URP `14.0.12` 已安装，且 `manifest.json` 中保留 `com.unity.render-pipelines.universal` 依赖。关卡引用 URP 包内材质，只有图片素材存在不足以正常渲染；等待依赖恢复与资源导入后再检查。
-- **运行后没有玩家**：打开已接入的 `SampleScene` 或 `ShadowTraceDemo`；Level 1 需要按上述步骤接入玩法。
-- **按键无响应**：点击 Game 窗口，并检查 Active Input Handling。
-- **无法生成影子**：查看 HUD 提示，检查数量上限、起点是否被占用，以及停留型是否能找到地面。
-- **箱子无法推动**：检查 `PushableBody2D`、动态刚体、实体碰撞体及水平位置约束。
-- **停止的趋近型暂时不能站立**：先走出影子，让与玩家的碰撞安全开启。
-- **按钮没有开启**：必须是影子从上方按压，玩家站上去不触发；检查 Press Area 与实体支撑面是否正确对应。
-- **门已显示打开但仍阻挡**：这是解锁状态；玩家接触门后按 F 才获得本次通行权限。
+- **画面发紫 / 材质 Missing**：确认 URP 14.0.12 已安装且 `manifest.json` 保留 universal RP 依赖，等待导入完成。
+- **按键无响应**：先点一下 Game 窗口获取焦点，并确认 Active Input Handling 含 Input Manager。
+- **生成不了影子**：看 HUD 提示——影子槽满、起点被占或停留型脚下找不到地面都会失败。
+- **压板不触发**：所有压板只认影子，玩家站上去无效；影子需进入触发区域（移动平台压板）或从板面上方踩住（大门压板）。
+- **门显示开了还挡路**：开门只是解锁状态，需要玩家走到门前按 F 才能穿过。
+- **趋近型停下后站不上去**：先离开影子让它安全开启实体碰撞，再站上其顶部。
+- **「继续」提示无存档**：存档已被新游戏 / 通关清除，或存档对应的不是该关卡；点亮路灯后才会产生检查点。
+- **移动平台不动**：在 SampleScene 执行一次 Tools → Shadow Trace → Setup Moving Platform (SampleScene) 并保存场景，检查平台 Offset 不为零、压板 Target Platform 已关联。

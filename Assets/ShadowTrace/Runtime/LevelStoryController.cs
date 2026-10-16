@@ -27,6 +27,8 @@ namespace ShadowTrace
         public GamePauseController pause;
         [Min(0)] public float introductionDelay = 2;
         [Min(0)] public float fadeDuration = 0.3f;
+        [Tooltip("终局黑屏白字结束后，从纯黑淡开到 Log 场景的时长（秒）。")]
+        [Min(0)] public float endingRevealDuration = 0.6f;
 
         public static bool InputBlocked => owner != null;
         public bool IsPlaying => owner == this;
@@ -38,6 +40,7 @@ namespace ShadowTrace
         private readonly HashSet<Text> requested = new HashSet<Text>();
         private readonly Queue<Text> pending = new Queue<Text>();
         private Coroutine playback;
+        private CanvasGroup currentTextGroup;
         private bool advance;
         private int readyFrame;
         private float previousTimeScale;
@@ -141,24 +144,33 @@ namespace ShadowTrace
             while (pending.Count > 0)
             {
                 var text = pending.Dequeue();
-                yield return PlayText(text, talkPanel);
                 if (EndingStarted && text == endingTalk)
                 {
-                    yield return PlayText(endingWords, endingPanel);
-                    // Keep the ending locked if storage cannot be cleared; allow a retry.
-                    while (checkpoint != null && !checkpoint.CompleteGame())
+                    // 第一段（普通对白框）正常淡入淡出。
+                    yield return PlayText(text, talkPanel);
+                    // 第二段是 EndWord 黑底白字：结束时白字淡出，但黑底保持全黑不退场，
+                    // 交给跨场景常驻黑幕接管，避免露出游戏画面那一闪。
+                    yield return PlayText(endingWords, endingPanel, keepPanelOpaque: true);
+                    // 清档失败时允许重试：把白字淡回来等玩家确认，再淡走重试。
+                    while (checkpoint != null && !checkpoint.ClearGameProgress())
                     {
+                        yield return Fade(currentTextGroup, 1);
                         WaitingForAdvance = true; readyFrame = Time.frameCount; advance = false;
                         yield return new WaitUntil(() => advance);
+                        yield return Fade(currentTextGroup, 0);
                     }
+                    // 屏幕此刻仍是 EndWord 纯黑：常驻黑幕在肉眼无变化的情况下接管，异步进 Log 后淡开。
+                    SceneFadeOverlay.LoadThroughBlack(
+                        checkpoint != null ? checkpoint.MenuScenePath : null, endingRevealDuration);
                     yield break;
                 }
+                yield return PlayText(text, talkPanel);
             }
             Release();
             playback = null;
         }
 
-        private IEnumerator PlayText(Text text, GameObject panel)
+        private IEnumerator PlayText(Text text, GameObject panel, bool keepPanelOpaque = false)
         {
             if (text == null || panel == null || !lines.TryGetValue(text, out var entries)) yield break;
             CurrentText = text;
@@ -169,6 +181,7 @@ namespace ShadowTrace
             panelFade.alpha = 0;
             text.gameObject.SetActive(true);
             var textFade = Group(text.gameObject);
+            currentTextGroup = textFade;
             textFade.alpha = 1;
             if (entries.Length > 0) text.text = entries[0];
             else text.text = string.Empty;
@@ -183,6 +196,14 @@ namespace ShadowTrace
                     text.text = entries[i + 1];
                     yield return Fade(textFade, 1);
                 }
+            }
+            if (keepPanelOpaque)
+            {
+                // 终局：白字淡出即可，黑底 alpha 保持 1、面板保持激活，后续转场黑幕从纯黑接管。
+                yield return Fade(textFade, 0);
+                text.gameObject.SetActive(false);
+                CurrentText = null;
+                yield break;
             }
             yield return Fade(panelFade, 0);
             text.gameObject.SetActive(false);

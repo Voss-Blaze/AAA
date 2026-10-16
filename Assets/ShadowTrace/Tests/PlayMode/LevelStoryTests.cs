@@ -34,6 +34,7 @@ namespace ShadowTrace.Tests
             Assert.AreEqual(2, story.introductionDelay);
             story.introductionDelay = 1000;
             story.fadeDuration = 0.03f;
+            story.endingRevealDuration = 0.05f;
             story.checkpoint.player.Body.gravityScale = 0;
             yield return null;
         }
@@ -47,6 +48,7 @@ namespace ShadowTrace.Tests
                 var scene = SceneManager.GetSceneByPath(path);
                 if (scene.IsValid() && scene.isLoaded && scene != previous) yield return SceneManager.UnloadSceneAsync(scene);
             }
+            foreach (var overlay in Object.FindObjectsOfType<SceneFadeOverlay>()) Object.DestroyImmediate(overlay.gameObject);
             Time.timeScale = 1;
             SaveGameService.Current.BeginNewGame();
             if (Directory.Exists(directory)) Directory.Delete(directory);
@@ -174,11 +176,30 @@ namespace ShadowTrace.Tests
             Assert.IsTrue(story.endingPanel.activeSelf);
             Assert.AreEqual(0, Time.timeScale);
             yield return FinishCurrent();
-            yield return null; yield return null;
-            Assert.AreEqual("Assets/Scenes/Log.unity", SceneManager.GetActiveScene().path);
+            // 终局现在是黑屏异步转场：Log 激活前 EndWord 黑底必须保持全黑、不关闭，且常驻黑幕已接管。
+            float deadline = Time.realtimeSinceStartup + 5;
+            bool overlaySeen = false;
+            while (SceneManager.GetActiveScene().path != "Assets/Scenes/Log.unity" && Time.realtimeSinceStartup < deadline)
+            {
+                if (story != null)
+                {
+                    Assert.IsTrue(story.endingPanel.activeSelf, "切换完成前 EndWord 黑底不允许关闭");
+                    var panelGroup = story.endingPanel.GetComponent<CanvasGroup>();
+                    Assert.IsNotNull(panelGroup);
+                    Assert.AreEqual(1f, panelGroup.alpha, 0.001f, "切换完成前黑底必须保持全黑");
+                }
+                if (Object.FindObjectOfType<SceneFadeOverlay>() != null) overlaySeen = true;
+                yield return null;
+            }
+            Assert.AreEqual("Assets/Scenes/Log.unity", SceneManager.GetActiveScene().path, "黑屏异步转场没有进入 Log 场景");
+            Assert.IsTrue(overlaySeen, "异步加载期间应当存在跨场景常驻黑幕");
             Assert.IsFalse(SaveGameService.Current.TryRead(out _));
             Assert.IsFalse(LevelStoryController.InputBlocked);
             Assert.AreEqual(1, Time.timeScale);
+            // 淡开结束后黑幕必须自毁，不残留在 Log 场景上。
+            deadline = Time.realtimeSinceStartup + 3;
+            while (Object.FindObjectOfType<SceneFadeOverlay>() != null && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.IsNull(Object.FindObjectOfType<SceneFadeOverlay>(), "淡开结束后常驻黑幕应当自毁");
             var menu = Find<MainMenuController>(SceneManager.GetActiveScene());
             menu.OpenResume(); menu.resumeOKButton.onClick.Invoke();
             Assert.IsFalse(menu.resumePanel.activeSelf);
