@@ -32,7 +32,7 @@ namespace ShadowTrace
 
             if (tooltip == null || tooltipText == null) return;
             string message = string.Empty;
-            if (manager != null && (life == null || !life.IsDead))
+            if (!LevelStoryController.InputBlocked && manager != null && (life == null || !life.IsDead))
             {
                 if (Time.time < priorityUntil) message = priorityMessage;
                 else if (ability != null && ability.Phase != TracePhase.Idle && manager.uiSettings != null)

@@ -105,6 +105,20 @@ namespace ShadowTrace.Tests
             Assert.That(Vector2.Distance(controller.player.Body.position, data.position), Is.LessThan(0.1f));
             Assert.IsTrue(controller.lamps.Single(l => l.checkpointId == data.checkpointId).IsLit);
             Assert.AreEqual(0, Find<ShadowManager>().Count);
+            var story = Find<LevelStoryController>();
+            controller.player.Body.gravityScale = 0;
+            yield return new WaitForSeconds(2.15f);
+            Assert.IsFalse(story.IsPlaying, "Resume must skip the introduction");
+            Assert.IsFalse(story.talkPanel.activeSelf);
+
+            SceneManager.LoadScene(MenuPath); yield return null; yield return null;
+            yield return NewGame();
+            Assert.IsFalse(SaveGameService.Current.TryRead(out _), "Start must clear the old checkpoint");
+            story = Find<LevelStoryController>();
+            story.checkpoint.player.Body.gravityScale = 0;
+            yield return new WaitForSecondsRealtime(2.3f);
+            Assert.IsTrue(story.IsPlaying, "Start must still play the introduction");
+            Assert.AreSame(story.introduction, story.CurrentText);
         }
 
         [UnityTest] public IEnumerator NewLampOverwritesCheckpointAndDeathReturnsToMenuWithoutDeletingSave()

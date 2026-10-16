@@ -75,6 +75,46 @@ namespace ShadowTrace.Tests
         }
 
 #if UNITY_EDITOR
+        [UnityTest] public IEnumerator ScrollZoomClampsToInspectorLimitsAndBackgroundFitsInSameFrame()
+        {
+            level = EditorSceneManager.LoadSceneInPlayMode("Assets/Scenes/Level 1.unity", new LoadSceneParameters(LoadSceneMode.Additive));
+            yield return new WaitUntil(() => level.isLoaded);
+            SceneManager.SetActiveScene(level);
+            var roots = level.GetRootGameObjects();
+            roots.SelectMany(g => g.GetComponentsInChildren<LevelStoryController>(true)).Single().enabled = false;
+            var background = roots.SelectMany(g => g.GetComponentsInChildren<CameraBackgroundFollow>(true)).Single();
+            var camera = background.targetCamera;
+            var zoom = camera.GetComponent<TraceCameraFollow>();
+            var renderer = background.GetComponent<SpriteRenderer>();
+            zoom.minOrthographicSize = 3; zoom.maxOrthographicSize = 14; zoom.zoomSpeed = 2;
+            camera.orthographicSize = 8;
+            zoom.ApplyScrollZoom(1);
+            Assert.AreEqual(6, camera.orthographicSize);
+            yield return null; yield return null;
+            AssertCoverage(camera, renderer);
+            var smaller = renderer.bounds.size;
+            zoom.ApplyScrollZoom(-1);
+            Assert.AreEqual(8, camera.orthographicSize);
+            yield return null; yield return null;
+            AssertCoverage(camera, renderer);
+            Assert.Greater(renderer.bounds.size.x, smaller.x);
+            zoom.ApplyScrollZoom(100);
+            Assert.AreEqual(3, camera.orthographicSize);
+            yield return null; yield return null;
+            AssertCoverage(camera, renderer);
+            zoom.ApplyScrollZoom(-100);
+            Assert.AreEqual(14, camera.orthographicSize);
+            yield return null; yield return null;
+            AssertCoverage(camera, renderer);
+            Time.timeScale = 0;
+            zoom.ApplyScrollZoom(1);
+            Assert.AreEqual(14, camera.orthographicSize);
+            Time.timeScale = 1;
+            zoom.enabled = false;
+            zoom.ApplyScrollZoom(1);
+            Assert.AreEqual(14, camera.orthographicSize);
+        }
+
         [UnityTest] public IEnumerator LevelBackgroundFollowsCameraAfterMovementAndFitsZoomWhilePaused()
         {
             level = EditorSceneManager.LoadSceneInPlayMode("Assets/Scenes/Level 1.unity", new LoadSceneParameters(LoadSceneMode.Additive));

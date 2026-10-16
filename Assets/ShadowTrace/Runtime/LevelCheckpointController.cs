@@ -22,7 +22,7 @@ namespace ShadowTrace
 
         public void ExitLevel()
         {
-            if (returningToMenu || (life != null && life.IsDead)) return;
+            if (returningToMenu || LevelStoryController.InputBlocked || (life != null && life.IsDead)) return;
             returningToMenu = true;
             var ability = player != null ? player.GetComponent<ShadowTraceAbility>() : null;
             if (ability != null) ability.CancelTrace();
@@ -33,6 +33,14 @@ namespace ShadowTrace
         {
             if (life != null) life.Died += OnDeath;
             if (lamps != null) foreach (var lamp in lamps) if (lamp != null) lamp.Lit += SaveCheckpoint;
+        }
+
+        public bool CompleteGame()
+        {
+            if (returningToMenu || !SaveGameService.Current.BeginNewGame()) return false;
+            returningToMenu = true;
+            ReturnToMenu();
+            return true;
         }
 
         private void OnDisable()
@@ -87,6 +95,8 @@ namespace ShadowTrace
         private void SaveCheckpoint(ShadowLamp lamp)
         {
             if (returningToMenu || life == null || life.IsDead || string.IsNullOrEmpty(lamp.checkpointId)) return;
+            var story = GetComponent<LevelStoryController>();
+            if (story != null && story.EndingStarted) return;
             if (!SafePosition(lamp.RespawnPosition, out var position))
             {
                 Debug.LogWarning("Checkpoint respawn point is blocked or has no safe ground: " + lamp.name, lamp);

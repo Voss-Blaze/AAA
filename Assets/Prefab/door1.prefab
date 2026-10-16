@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 3206646644487903186}
   - component: {fileID: 4051920196583008571}
   - component: {fileID: 6191035825383189206}
+  - component: {fileID: 5008090881637784013}
   m_Layer: 0
   m_Name: door1
   m_TagString: Untagged
@@ -149,6 +150,24 @@ MonoBehaviour:
   interactionArea: {fileID: 4007286675395353234}
   closedSprite: {fileID: -673186360, guid: cab41fa29b4e4d345860924bf2101886, type: 3}
   openSprite: {fileID: 1554368115, guid: cab41fa29b4e4d345860924bf2101886, type: 3}
+--- !u!114 &5008090881637784013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6436415662657993219}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d81883ca21944173909c1588860e1d1a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  promptText: '[F]'
+  font: {fileID: 12800000, guid: 3679a15b207597f4d9e0c6a46ba39568, type: 3}
+  color: {r: 1, g: 1, b: 1, a: 1}
+  offset: {x: 0, y: -2, z: 0}
+  fontSize: 48
+  characterSize: 0.06
 --- !u!1 &8757313828583408380
 GameObject:
   m_ObjectHideFlags: 0

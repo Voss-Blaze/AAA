@@ -39,7 +39,7 @@ namespace ShadowTrace
 
         public void UsePauseKey()
         {
-            if (life != null && life.IsDead) return;
+            if (LevelStoryController.InputBlocked || (life != null && life.IsDead)) return;
             TogglePause();
             GameAudioManager.Instance?.PlaySound(GameSound.HInteract);
         }
@@ -54,7 +54,7 @@ namespace ShadowTrace
         public void TogglePause()
         {
             ClearButtonSelection();
-            if (life != null && life.IsDead) return;
+            if (LevelStoryController.InputBlocked || (life != null && life.IsDead)) return;
             if (!IsPaused && Time.timeScale <= 0) return;
             if (IsPaused) Time.timeScale = previousTimeScale;
             else { previousTimeScale = Time.timeScale; Time.timeScale = 0; }

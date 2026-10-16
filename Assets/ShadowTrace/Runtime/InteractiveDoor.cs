@@ -14,6 +14,7 @@ namespace ShadowTrace
         public Sprite closedSprite;
         public Sprite openSprite;
         public bool PassageGranted => passer != null;
+        public event System.Action<InteractiveDoor> Passed;
         public bool IsUnlocked
         {
             get
@@ -68,6 +69,7 @@ namespace ShadowTrace
             RefreshPlates();
             RefreshAppearance();
             GameAudioManager.Instance?.PlaySound(GameSound.DoorOpen);
+            Passed?.Invoke(this);
             return true;
         }
 
