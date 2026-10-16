@@ -45,7 +45,11 @@ namespace ShadowTrace
             }
             else if (manager == null) Debug.LogWarning("ShadowTraceAbility needs a ShadowManager.", this);
             else if (manager.Full) manager.ShowNotice(ShadowNotice.LimitReached);
-            else { manager.ShowMessage(string.Empty); Phase = TracePhase.Preparing; elapsed = 0; duration = preparationDuration; }
+            else
+            {
+                manager.ShowMessage(string.Empty); Phase = TracePhase.Preparing; elapsed = 0; duration = preparationDuration;
+                GameAudioManager.Instance?.SetClock(true);
+            }
         }
 
         private void FixedUpdate()
@@ -73,7 +77,11 @@ namespace ShadowTrace
             if (spawned) ShadowSpawned?.Invoke();
         }
 
-        private void ResetTrace() { Phase = TracePhase.Idle; elapsed = 0; recording = null; }
+        private void ResetTrace()
+        {
+            Phase = TracePhase.Idle; elapsed = 0; recording = null;
+            GameAudioManager.Instance?.SetClock(false);
+        }
         public void CancelTrace() { ResetTrace(); }
         private void OnDisable() { ResetTrace(); }
     }

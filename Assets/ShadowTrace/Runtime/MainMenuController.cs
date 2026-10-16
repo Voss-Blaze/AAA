@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
@@ -11,6 +12,13 @@ namespace ShadowTrace
         public GameObject menuPanel;
         public Button startButton;
         public Button quitButton;
+        public Button resumeButton;
+        public GameObject resumePanel;
+        public Button resumeOKButton;
+        public Button resumeNOButton;
+        public GameObject noSaveHint;
+        [Min(0)] public float noSaveHintDuration = 3;
+        private Coroutine hintRoutine;
         public Button settingsButton;
         public GameObject startPanel;
         public Button startOKButton;
@@ -43,6 +51,14 @@ namespace ShadowTrace
             CaptureTab(audioButton, out audioNormal, out audioSelected);
             ShowTutorial();
             ClosePanels();
+            if (noSaveHint != null) noSaveHint.SetActive(false);
+        }
+
+        private void Start()
+        {
+            if (!SaveGameService.Current.ShowNewGameHint) return;
+            SaveGameService.Current.ShowNewGameHint = false;
+            ShowNoSaveHint();
         }
 
         private static void CaptureTab(Button button, out Sprite normal, out Sprite selected)
@@ -57,12 +73,15 @@ namespace ShadowTrace
         }
 
         private void OnEnable() { Bind(true); }
-        private void OnDisable() { Bind(false); }
+        private void OnDisable() { Bind(false); if (hintRoutine != null) StopCoroutine(hintRoutine); }
 
         private void Bind(bool add)
         {
             Listen(startButton, OpenStart, add);
             Listen(quitButton, OpenQuit, add);
+            Listen(resumeButton, OpenResume, add);
+            Listen(resumeOKButton, ConfirmResume, add);
+            Listen(resumeNOButton, ClosePanels, add);
             Listen(settingsButton, OpenSettings, add);
             Listen(startOKButton, ConfirmStart, add);
             Listen(startNOButton, ClosePanels, add);
@@ -82,6 +101,7 @@ namespace ShadowTrace
 
         public void OpenStart() { ShowPanel(startPanel); }
         public void OpenQuit() { ShowPanel(quitPanel); }
+        public void OpenResume() { ShowPanel(resumePanel); }
         public void OpenSettings() { ShowTutorial(); ShowPanel(settingsPanel); }
         public void ClosePanels() { ShowPanel(null); }
 
@@ -89,8 +109,15 @@ namespace ShadowTrace
         {
             if (startPanel != null) startPanel.SetActive(panel == startPanel);
             if (quitPanel != null) quitPanel.SetActive(panel == quitPanel);
+            if (resumePanel != null) resumePanel.SetActive(panel == resumePanel);
             if (settingsPanel != null) settingsPanel.SetActive(panel == settingsPanel);
             if (panel != null) panel.transform.SetAsLastSibling();
+            if (panel != null && noSaveHint != null)
+            {
+                if (hintRoutine != null) StopCoroutine(hintRoutine);
+                hintRoutine = null;
+                noSaveHint.SetActive(false);
+            }
             if (menuGroup != null) menuGroup.interactable = panel == null;
             if (settingsButton != null) settingsButton.interactable = panel == null;
             if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
@@ -122,8 +149,38 @@ namespace ShadowTrace
                 Debug.LogError("Configure a built scene in MainMenuController.level1ScenePath.", this);
                 return;
             }
+            if (!SaveGameService.Current.BeginNewGame()) return;
             Time.timeScale = 1;
             SceneManager.LoadScene(level1ScenePath);
+        }
+
+        public void ConfirmResume()
+        {
+            if (resumePanel == null || !resumePanel.activeInHierarchy) return;
+            if (!Application.CanStreamedLevelBeLoaded(level1ScenePath) || !SaveGameService.Current.BeginResume(level1ScenePath))
+            {
+                ClosePanels();
+                ShowNoSaveHint();
+                return;
+            }
+            Time.timeScale = 1;
+            SceneManager.LoadScene(level1ScenePath);
+        }
+
+        private void ShowNoSaveHint()
+        {
+            if (noSaveHint == null) return;
+            if (hintRoutine != null) StopCoroutine(hintRoutine);
+            hintRoutine = StartCoroutine(HintTimer());
+        }
+
+        private IEnumerator HintTimer()
+        {
+            noSaveHint.SetActive(true);
+            noSaveHint.transform.SetAsLastSibling();
+            yield return new WaitForSecondsRealtime(noSaveHintDuration);
+            noSaveHint.SetActive(false);
+            hintRoutine = null;
         }
 
         public void ConfirmQuit()

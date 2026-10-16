@@ -51,23 +51,31 @@ namespace ShadowTrace
         public static bool SpawnPosition(Vector2 start, ShadowKind kind, Vector2 size,
             LayerMask mask, float groundSearchDistance, out Vector2 position)
         {
+            return SpawnPosition(start, kind, size, Vector2.zero, mask, groundSearchDistance, out position);
+        }
+
+        public static bool SpawnPosition(Vector2 start, ShadowKind kind, Vector2 size, Vector2 centerOffset,
+            LayerMask mask, float groundSearchDistance, out Vector2 position)
+        {
+            size = new Vector2(Mathf.Abs(size.x), Mathf.Abs(size.y));
             position = start;
             if (kind == ShadowKind.Stay)
             {
                 // Box cast includes the whole footprint, instead of selecting ground under its centre only.
-                var hits = Physics2D.BoxCastAll(start, new Vector2(size.x * 0.95f, 0.04f),
+                var hits = Physics2D.BoxCastAll(start + centerOffset, new Vector2(size.x * 0.95f, 0.04f),
                     0, Vector2.down, groundSearchDistance, mask);
                 bool found = false;
                 foreach (var hit in hits)
                 {
                     if (!IsWorld(hit.collider) || hit.normal.y < 0.5f) continue;
-                    position = new Vector2(start.x, hit.point.y + size.y * 0.5f + 0.015f);
+                    // Return the root position, not the collider centre; offsets can be nonzero on both axes.
+                    position = new Vector2(start.x, hit.point.y + size.y * 0.5f + 0.015f - centerOffset.y);
                     found = true;
                     break;
                 }
                 if (!found) return false;
             }
-            foreach (var collider in Physics2D.OverlapBoxAll(position, size * 0.96f, 0, mask))
+            foreach (var collider in Physics2D.OverlapBoxAll(position + centerOffset, size * 0.96f, 0, mask))
                 if (IsWorld(collider)) return false;
             return true;
         }

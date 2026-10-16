@@ -12,6 +12,13 @@ namespace ShadowTrace
         public GameObject[] occupiedIcons;
         public GameObject tooltip;
         public Text tooltipText;
+        private string priorityMessage;
+        private float priorityUntil;
+
+        public void ShowPriorityMessage(string text, float duration)
+        {
+            priorityMessage = text; priorityUntil = Time.time + duration; Refresh();
+        }
 
         private void Start() { Refresh(); }
         private void LateUpdate() { Refresh(); }
@@ -27,7 +34,8 @@ namespace ShadowTrace
             string message = string.Empty;
             if (manager != null && (life == null || !life.IsDead))
             {
-                if (ability != null && ability.Phase != TracePhase.Idle && manager.uiSettings != null)
+                if (Time.time < priorityUntil) message = priorityMessage;
+                else if (ability != null && ability.Phase != TracePhase.Idle && manager.uiSettings != null)
                     message = manager.uiSettings.Countdown(ability.Phase, ability.Remaining);
                 else if (Time.time < manager.MessageUntil) message = manager.Message;
             }

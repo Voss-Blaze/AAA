@@ -67,6 +67,7 @@ namespace ShadowTrace
             // Re-query after clearing: sustained plates release without revoking this safe passage.
             RefreshPlates();
             RefreshAppearance();
+            GameAudioManager.Instance?.PlaySound(GameSound.DoorOpen);
             return true;
         }
 

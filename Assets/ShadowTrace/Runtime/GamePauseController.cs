@@ -34,7 +34,14 @@ namespace ShadowTrace
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.H)) TogglePause();
+            if (Input.GetKeyDown(KeyCode.H)) UsePauseKey();
+        }
+
+        public void UsePauseKey()
+        {
+            if (life != null && life.IsDead) return;
+            TogglePause();
+            GameAudioManager.Instance?.PlaySound(GameSound.HInteract);
         }
 
         private void ClearButtonSelection()
@@ -52,6 +59,7 @@ namespace ShadowTrace
             if (IsPaused) Time.timeScale = previousTimeScale;
             else { previousTimeScale = Time.timeScale; Time.timeScale = 0; }
             IsPaused = !IsPaused;
+            GameAudioManager.Instance?.SetGameplayPaused(IsPaused);
             Refresh();
         }
 

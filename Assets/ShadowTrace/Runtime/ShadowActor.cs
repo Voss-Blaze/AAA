@@ -119,6 +119,16 @@ namespace ShadowTrace
             if (sprite != null) sprite.color = selected ? Color.yellow : baseColor;
         }
 
+        public void Despawn()
+        {
+            if (manager != null) manager.Remove(this);
+            else
+            {
+                gameObject.SetActive(false);
+                Destroy(gameObject);
+            }
+        }
+
         private void FixedUpdate()
         {
             if (!initialized || player == null) return;

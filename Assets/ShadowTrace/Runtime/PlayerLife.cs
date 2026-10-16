@@ -8,6 +8,7 @@ namespace ShadowTrace
     {
         [Min(0.05f)] public float effectDuration = 0.6f;
         public bool IsDead { get; private set; }
+        public event System.Action Died;
         private bool ownsPause;
         private float previousTimeScale;
 
@@ -33,6 +34,7 @@ namespace ShadowTrace
             ownsPause = previousTimeScale > 0;
             Time.timeScale = 0;
             StartCoroutine(DeathEffect());
+            Died?.Invoke();
         }
 
         private IEnumerator DeathEffect()

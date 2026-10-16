@@ -193,7 +193,7 @@ BoxCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
   m_Offset: {x: 0, y: -0.17}
@@ -228,4 +228,3 @@ MonoBehaviour:
   pressedSprite: {fileID: 1758787617, guid: afe38daefaff0d94ea6270c484f6903c, type: 3}
   playerCanPress: 0
   shadowCanPress: 1
-  pressTolerance: 0.12

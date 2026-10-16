@@ -13,7 +13,7 @@ namespace ShadowTrace
     }
 
     /// <summary>
-    /// 带动移动平台的压板。按压判定与 ShadowPressurePlate 一致：踩在板顶、脚底贴合板面、且不是在往上跳。
+    /// 带动移动平台的触发机关：符合配置的角色与 Press Area 重叠时触发，不产生实体阻挡。
     /// 只认「生成的影子」（ShadowActor）：玩家踩上去不触发。被踩住时切换到 pressedSprite，平台按 mode 移动。
     /// </summary>
     [DisallowMultipleComponent, RequireComponent(typeof(BoxCollider2D), typeof(SpriteRenderer))]
@@ -40,20 +40,17 @@ namespace ShadowTrace
         [Tooltip("影子踩上去也能触发。")]
         public bool shadowCanPress = true;
 
-        [Tooltip("脚底与板面之间允许的高度差，超过就不算踩在板顶。")]
-        [Min(0f)] public float pressTolerance = 0.12f;
-
         /// <summary>当前是否正被踩着。</summary>
         public bool IsPressed { get; private set; }
 
-        private BoxCollider2D support;
         private SpriteRenderer sprite;
         private bool wasPressed;
         private readonly Collider2D[] overlaps = new Collider2D[32];
 
         private void Awake()
         {
-            support = GetComponent<BoxCollider2D>();
+            var ownShape = GetComponent<BoxCollider2D>();
+            ownShape.isTrigger = true;
             sprite = GetComponent<SpriteRenderer>();
             if (idleSprite == null && sprite != null) idleSprite = sprite.sprite;
             if (pressArea == null)
@@ -61,19 +58,24 @@ namespace ShadowTrace
                 // 没手动指定时，自动找子物体上的触发盒（PressurePlate 预制体里的 Press Area）。
                 foreach (var candidate in GetComponentsInChildren<Collider2D>(true))
                 {
-                    if (candidate == support || !candidate.isTrigger) continue;
+                    if (candidate == ownShape || !candidate.isTrigger) continue;
                     pressArea = candidate as BoxCollider2D;
                     break;
                 }
             }
+            if (pressArea == null) pressArea = ownShape;
+            pressArea.isTrigger = true;
             if (targetPlatform == null) targetPlatform = FindObjectOfType<MovingPlatform>();
             ApplySprite(false);
         }
 
-        private void FixedUpdate()
+        private void FixedUpdate() { Refresh(); }
+
+        public void Refresh()
         {
             bool pressed = Detect();
             bool edge = pressed && !wasPressed;
+            if (edge) GameAudioManager.Instance?.PlaySound(GameSound.Plate);
             wasPressed = pressed;
             IsPressed = pressed;
             ApplySprite(pressed);
@@ -82,52 +84,47 @@ namespace ShadowTrace
             else if (edge) targetPlatform.PressOnce();
         }
 
-        /// <summary>是否有人踩在板顶。</summary>
+        /// <summary>触发区域中是否还有符合配置的角色。</summary>
         private bool Detect()
         {
-            if (!isActiveAndEnabled || support == null || pressArea == null || !pressArea.enabled) return false;
-            var surface = support.bounds;
+            if (!isActiveAndEnabled || pressArea == null || !pressArea.enabled || !pressArea.gameObject.activeInHierarchy) return false;
             var filter = new ContactFilter2D().NoFilter();
             int count = pressArea.OverlapCollider(filter, overlaps);
             for (int i = 0; i < count; i++)
             {
-                if (!TryActor(overlaps[i], out var shape, out var body)) continue;
-                var feet = shape.bounds;
-                // 侧面蹭到和正在往上跳的都不算踩在板顶。
-                if (Mathf.Abs(feet.min.y - surface.max.y) > pressTolerance) continue;
-                if (body.velocity.y > 0.1f) continue;
-                if (feet.center.x < surface.min.x || feet.center.x > surface.max.x) continue;
-                return true;
+                if (AcceptsActor(overlaps[i])) return true;
             }
             return false;
         }
 
-        private bool TryActor(Collider2D collider, out Collider2D shape, out Rigidbody2D body)
+        private bool AcceptsActor(Collider2D collider)
         {
-            shape = null;
-            body = null;
             if (shadowCanPress)
             {
                 var shadow = collider.GetComponentInParent<ShadowActor>();
                 if (shadow != null && shadow.isActiveAndEnabled && shadow.Body != null &&
                     shadow.Body.simulated && shadow.Shape != null)
                 {
-                    shape = shadow.Shape;
-                    body = shadow.Body;
                     return true;
                 }
             }
             if (playerCanPress)
             {
                 var player = collider.GetComponentInParent<PlayerController2D>();
-                if (player != null && player.isActiveAndEnabled && player.Body != null && player.Shape != null)
+                if (player != null && player.isActiveAndEnabled && player.Body != null && player.Body.simulated && player.Shape != null)
                 {
-                    shape = player.Shape;
-                    body = player.Body;
                     return true;
                 }
             }
             return false;
+        }
+
+        private void OnDisable()
+        {
+            wasPressed = false;
+            IsPressed = false;
+            ApplySprite(false);
+            if (mode == MoverPlateMode.Patrol && targetPlatform != null) targetPlatform.SetPressed(false);
         }
 
         private void ApplySprite(bool pressed)

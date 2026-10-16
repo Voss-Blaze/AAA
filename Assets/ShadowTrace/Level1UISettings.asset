@@ -20,9 +20,11 @@ MonoBehaviour:
   cleared: "\u6240\u6709\u5F71\u5B50\u5DF2\u6E05\u9664"
   missingReferences: "\u5F71\u5B50\u751F\u6210\u914D\u7F6E\u7F3A\u5931"
   spawnBlocked: "\u65E0\u6CD5\u751F\u6210\u5F71\u5B50\uFF1A\u6CA1\u6709\u5730\u9762\u6216\u4F4D\u7F6E\u88AB\u963B\u6321"
+  saveSucceeded: "\u5B58\u6863\u6210\u529F"
+  saveNoticeDuration: 2
   noticeDuration: 2
   shadowNumberFont: {fileID: 12800000, guid: 3679a15b207597f4d9e0c6a46ba39568, type: 3}
-  shadowNumberFormat: '00'
+  shadowNumberFormat: 00
   shadowNumberOffset: {x: 0, y: 0.25, z: 0}
   shadowNumberFontSize: 64
   shadowNumberCharacterSize: 0.08

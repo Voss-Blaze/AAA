@@ -15,6 +15,7 @@ namespace ShadowTrace.Tests
 
         [SetUp] public void SetUp()
         {
+            Time.timeScale = 1;
             player = Create("Player", new Vector2(-5, 0)).AddComponent<PlayerController2D>();
             player.Body.gravityScale = 0;
             var source = Create("Prefab", new Vector2(-100, -100));
@@ -57,6 +58,81 @@ namespace ShadowTrace.Tests
             var actor = manager.Actors[manager.Count - 1];
             actor.gameObject.SetActive(true);
             return actor;
+        }
+
+        [TestCase(1f, 1f)] [TestCase(0.15f, 0.15f)]
+        [TestCase(-0.15f, 0.15f)] [TestCase(0.15f, -0.15f)]
+        public void StayUsesScaledColliderOffsetToPlaceActualFeetOnGround(float scaleX, float scaleY)
+        {
+            prefab.Shape.size = new Vector2(2, 4);
+            prefab.Shape.offset = new Vector2(0.7f, -1.8f);
+            prefab.transform.localScale = new Vector3(scaleX, scaleY, 1);
+            Assert.IsTrue(manager.TrySpawn(ShadowKind.Stay, new Vector2(1, 4), 0));
+            var shadow = manager.Actors[0];
+            Physics2D.SyncTransforms();
+            Assert.That(shadow.Shape.bounds.min.y, Is.EqualTo(-0.985f).Within(0.005f));
+            Assert.That(shadow.Shape.bounds.center.x, Is.EqualTo(1 + 0.7f * scaleX).Within(0.005f));
+        }
+
+        [Test] public void StaySearchesForGroundUnderOffsetFootprint()
+        {
+            prefab.Shape.offset = new Vector2(3, -0.3f);
+            World("Raised support", new Vector2(3, 1), new Vector2(1, 0.5f));
+            Assert.IsTrue(manager.TrySpawn(ShadowKind.Stay, new Vector2(0, 4), 0));
+            Physics2D.SyncTransforms();
+            Assert.That(manager.Actors[0].Shape.bounds.min.y, Is.EqualTo(1.265f).Within(0.005f));
+        }
+
+        [Test] public void SpawnChecksActualOffsetColliderInsteadOfRootPosition()
+        {
+            prefab.Shape.offset = new Vector2(3, 0);
+            var wall = World("Wall at collider", new Vector2(3, 0), Vector2.one);
+            Assert.IsFalse(manager.TrySpawn(ShadowKind.Approach, Vector2.zero, 1));
+            Assert.AreEqual(0, manager.Count);
+            wall.transform.position = Vector2.zero;
+            Assert.IsTrue(manager.TrySpawn(ShadowKind.Approach, Vector2.zero, 1));
+            Assert.AreEqual(1, manager.Count);
+        }
+
+        [UnityTest] public IEnumerator SpikesDestroyAllShadowKindsAndReleaseTheirIconsAndNumbers()
+        {
+            var spike = new GameObject("Spike"); objects.Add(spike);
+            spike.AddComponent<BoxCollider2D>().isTrigger = true;
+            spike.AddComponent<SpikeHazard>();
+            var hud = manager.gameObject.AddComponent<ShadowTraceHUD>();
+            hud.manager = manager;
+            var icon = new GameObject("Occupied icon"); objects.Add(icon);
+            hud.occupiedIcons = new[] { icon };
+            foreach (ShadowKind kind in System.Enum.GetValues(typeof(ShadowKind)))
+            {
+                Assert.IsTrue(manager.TrySpawn(kind, Vector2.zero, 1));
+                var shadow = manager.Actors[0];
+                Assert.AreEqual(1, shadow.Number);
+                manager.Select(0); hud.Refresh();
+                Assert.IsTrue(icon.activeSelf);
+                yield return new WaitForFixedUpdate();
+                yield return null;
+                Assert.IsTrue(shadow == null);
+                Assert.AreEqual(0, manager.Count);
+                Assert.AreEqual(-1, manager.SelectedSlot);
+                hud.Refresh(); Assert.IsFalse(icon.activeSelf);
+                Assert.AreEqual(1, Time.timeScale);
+            }
+        }
+
+        [UnityTest] public IEnumerator SpikeStillKillsPlayer()
+        {
+            var life = player.gameObject.AddComponent<PlayerLife>();
+            var spike = new GameObject("Spike"); objects.Add(spike);
+            spike.transform.position = player.Body.position;
+            spike.AddComponent<BoxCollider2D>().isTrigger = true;
+            spike.AddComponent<SpikeHazard>();
+            yield return new WaitForFixedUpdate();
+            yield return null;
+            Assert.IsTrue(life.IsDead);
+            Assert.AreEqual(0, Time.timeScale);
+            Object.DestroyImmediate(life);
+            Assert.AreEqual(1, Time.timeScale);
         }
 
         [UnityTest] public IEnumerator ApproachStopsAndBecomesPermanentPlatform()

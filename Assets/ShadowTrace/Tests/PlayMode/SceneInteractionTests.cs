@@ -195,13 +195,13 @@ namespace ShadowTrace.Tests
             manager.ClearAll(); yield return null; Assert.IsTrue(lamp.IsLit);
         }
 
-        [UnityTest] public IEnumerator SpikeIgnoresShadowButPlayerDiesAndEffectFinishesWhilePaused()
+        [UnityTest] public IEnumerator SpikeDestroysShadowAndPlayerDiesWithEffectFinishingWhilePaused()
         {
             var spike = Spawn(Props + "spike1.prefab", Vector2.zero).GetComponent<SpikeHazard>();
             var trigger = spike.GetComponent<BoxCollider2D>(); trigger.size = Vector2.one; trigger.offset = Vector2.zero;
             var shadow = Shadow(Vector2.zero, ShadowKind.Follow);
             Physics2D.SyncTransforms(); Physics2D.Simulate(0.02f); yield return null;
-            Assert.IsNotNull(shadow); Assert.AreEqual(1, manager.Count); Assert.AreEqual(1, Time.timeScale);
+            Assert.IsTrue(shadow == null); Assert.AreEqual(0, manager.Count); Assert.AreEqual(1, Time.timeScale);
             var life = player.GetComponent<PlayerLife>(); life.effectDuration = 0.08f;
             ability.UseTrace(); Move(player, Vector2.zero);
             Physics2D.Simulate(0.02f); yield return null;
@@ -209,7 +209,7 @@ namespace ShadowTrace.Tests
             Assert.IsFalse(player.enabled); Assert.IsFalse(player.Body.simulated); Assert.IsFalse(manager.enabled);
             Assert.AreEqual(TracePhase.Idle, ability.Phase);
             Assert.IsFalse(player.GetComponent<ActorAnimationDriver>().enabled);
-            Assert.AreEqual(1, manager.Count, "Death pauses the scene without clearing existing shadows.");
+            Assert.AreEqual(0, manager.Count, "The shadow destroyed by the spike must not reappear on player death.");
             ability.UseTrace(); Assert.AreEqual(TracePhase.Idle, ability.Phase);
             yield return new WaitForSecondsRealtime(0.15f);
             Assert.AreEqual(0, player.GetComponentInChildren<SpriteRenderer>().color.a, 0.001f);

@@ -74,9 +74,11 @@ namespace ShadowTrace
             if (player == null || shadowPrefab == null)
             { ShowNotice(ShadowNotice.MissingReferences); return false; }
             var shape = shadowPrefab.GetComponent<BoxCollider2D>();
-            Vector2 size = Vector2.Scale(shape.size, shadowPrefab.transform.localScale);
+            Vector2 scale = shadowPrefab.transform.lossyScale;
+            Vector2 size = Vector2.Scale(shape.size, new Vector2(Mathf.Abs(scale.x), Mathf.Abs(scale.y)));
+            Vector2 centerOffset = Vector2.Scale(shape.offset, scale);
             Physics2D.SyncTransforms();
-            if (!TracePhysics.SpawnPosition(origin, kind, size, shadowPrefab.worldMask,
+            if (!TracePhysics.SpawnPosition(origin, kind, size, centerOffset, shadowPrefab.worldMask,
                 groundSearchDistance, out var position))
             { ShowNotice(ShadowNotice.SpawnBlocked); return false; }
             int slot = slots.Allocate();
@@ -109,8 +111,11 @@ namespace ShadowTrace
             Select(-1);
         }
 
-        private void Remove(ShadowActor actor)
+        public void Remove(ShadowActor actor)
         {
+            if (actor == null) return;
+            int slot = actor.Number - 1;
+            if (slot < 0 || slot >= actors.Length || actors[slot] != actor) return;
             NotifyDestroyed(actor);
             // Disable immediately; Destroy is deferred until the end of the frame.
             actor.gameObject.SetActive(false);

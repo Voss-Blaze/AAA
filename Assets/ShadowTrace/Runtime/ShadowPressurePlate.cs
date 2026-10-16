@@ -51,7 +51,9 @@ namespace ShadowTrace
                     { pressed = true; break; }
                 }
             }
+            bool previouslyActive = IsActive;
             IsActive = mode == PressurePlateMode.Latched ? IsActive || pressed : pressed;
+            if (!previouslyActive && IsActive) GameAudioManager.Instance?.PlaySound(GameSound.Plate);
             var frame = IsActive ? activeSprite : closedSprite;
             if (frame != null && sprite != null) sprite.sprite = frame;
         }

@@ -70,10 +70,28 @@ namespace ShadowTrace.Editor
                 PrefabUtility.RecordPrefabInstancePropertyModifications(legacy);
             }
 
+            // The plate only detects actors; the level ground supplies physical support.
+            var plateShape = plate.GetComponent<BoxCollider2D>();
+            if (plateShape != null)
+            {
+                Undo.RecordObject(plateShape, "Use trigger plate");
+                plateShape.isTrigger = true;
+                PrefabUtility.RecordPrefabInstancePropertyModifications(plateShape);
+                EditorUtility.SetDirty(plateShape);
+            }
+
             var mover = plate.GetComponent<ShadowMoverPlate>();
             if (mover == null) mover = Undo.AddComponent<ShadowMoverPlate>(plate);
             mover.enabled = true;
             if (mover.pressArea == null) mover.pressArea = FirstTrigger(plate);
+            if (mover.pressArea == null) mover.pressArea = plateShape;
+            if (mover.pressArea != null)
+            {
+                Undo.RecordObject(mover.pressArea, "Use trigger area");
+                mover.pressArea.isTrigger = true;
+                PrefabUtility.RecordPrefabInstancePropertyModifications(mover.pressArea);
+                EditorUtility.SetDirty(mover.pressArea);
+            }
             if (mover.targetPlatform == null) mover.targetPlatform = moving;
             var frame = plate.GetComponent<SpriteRenderer>();
             if (mover.idleSprite == null)

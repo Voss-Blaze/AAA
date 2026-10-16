@@ -18,10 +18,15 @@ namespace ShadowTrace.Tests
         private ShadowManager manager;
         private ShadowTraceHUD hud;
         private GamePauseController pause;
+        private SaveGameService previousSaves;
+        private string saveDirectory;
 
         [UnitySetUp] public IEnumerator SetUp()
         {
             Time.timeScale = 1;
+            previousSaves = SaveGameService.Current;
+            saveDirectory = System.IO.Path.Combine(Application.dataPath, "../Temp/LevelSaveTests/" + System.Guid.NewGuid().ToString("N"));
+            SaveGameService.Current = new SaveGameService(saveDirectory);
             previous = SceneManager.GetActiveScene();
             scene = EditorSceneManager.LoadSceneInPlayMode("Assets/Scenes/Level 1.unity",
                 new LoadSceneParameters(LoadSceneMode.Additive));
@@ -41,6 +46,9 @@ namespace ShadowTrace.Tests
             if (previous.IsValid() && previous.isLoaded) SceneManager.SetActiveScene(previous);
             if (scene.IsValid() && scene.isLoaded) yield return SceneManager.UnloadSceneAsync(scene);
             Time.timeScale = 1;
+            SaveGameService.Current.BeginNewGame();
+            if (System.IO.Directory.Exists(saveDirectory)) System.IO.Directory.Delete(saveDirectory);
+            SaveGameService.Current = previousSaves;
         }
 
         [UnityTest] public IEnumerator FixedSlotsHideAndRefillTheirOwnIcons()

@@ -15,10 +15,15 @@ namespace ShadowTrace.Tests
         private Scene previous;
         private Scene menuScene;
         private MainMenuController menu;
+        private SaveGameService previousSaves;
+        private string saveDirectory;
 
         [UnitySetUp] public IEnumerator SetUp()
         {
             Time.timeScale = 1;
+            previousSaves = SaveGameService.Current;
+            saveDirectory = System.IO.Path.Combine(Application.dataPath, "../Temp/MenuSaveTests/" + System.Guid.NewGuid().ToString("N"));
+            SaveGameService.Current = new SaveGameService(saveDirectory);
             previous = SceneManager.GetActiveScene();
             menuScene = EditorSceneManager.LoadSceneInPlayMode("Assets/Scenes/Log.unity",
                 new LoadSceneParameters(LoadSceneMode.Additive));
@@ -36,6 +41,9 @@ namespace ShadowTrace.Tests
             if (menuScene.IsValid() && menuScene.isLoaded) yield return SceneManager.UnloadSceneAsync(menuScene);
             var level = SceneManager.GetSceneByPath("Assets/Scenes/Level 1.unity");
             if (level.IsValid() && level.isLoaded && level != previous) yield return SceneManager.UnloadSceneAsync(level);
+            SaveGameService.Current.BeginNewGame();
+            if (System.IO.Directory.Exists(saveDirectory)) System.IO.Directory.Delete(saveDirectory);
+            SaveGameService.Current = previousSaves;
         }
 
         [UnityTest] public IEnumerator ConfirmationPanelsOpenCancelAndBlockBackgroundButtons()
@@ -95,6 +103,8 @@ namespace ShadowTrace.Tests
         [UnityTest] public IEnumerator StartConfirmationLoadsLevel1AndRestoresGameTime()
         {
             Assert.IsTrue(Application.CanStreamedLevelBeLoaded("Assets/Scenes/Level 1.unity"));
+            Assert.IsTrue(SaveGameService.Current.TrySave(new SaveGameService.Checkpoint
+            { scenePath = "Assets/Scenes/Level 1.unity", checkpointId = "old checkpoint", position = new Vector3(999, 999, 0) }));
             menu.startButton.onClick.Invoke();
             Time.timeScale = 0;
             menu.startOKButton.onClick.Invoke();
@@ -102,6 +112,7 @@ namespace ShadowTrace.Tests
             yield return null;
             Assert.AreEqual("Assets/Scenes/Level 1.unity", SceneManager.GetActiveScene().path);
             Assert.AreEqual(1, Time.timeScale);
+            Assert.IsFalse(SaveGameService.Current.TryRead(out _), "Start must discard the old checkpoint.");
         }
     }
 }

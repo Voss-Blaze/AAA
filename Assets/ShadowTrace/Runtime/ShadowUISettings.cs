@@ -15,6 +15,8 @@ namespace ShadowTrace
         [TextArea] public string cleared;
         [TextArea] public string missingReferences;
         [TextArea] public string spawnBlocked;
+        [TextArea] public string saveSucceeded;
+        [Min(0)] public float saveNoticeDuration = 2;
         [Min(0)] public float noticeDuration = 2;
         public Font shadowNumberFont;
         public string shadowNumberFormat;

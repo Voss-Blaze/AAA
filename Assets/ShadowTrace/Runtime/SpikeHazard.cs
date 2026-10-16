@@ -9,6 +9,12 @@ namespace ShadowTrace
         private void OnTriggerStay2D(Collider2D other) { Hit(other); }
         private void Hit(Collider2D other)
         {
+            var shadow = other.GetComponentInParent<ShadowActor>();
+            if (shadow != null)
+            {
+                if (shadow.isActiveAndEnabled) shadow.Despawn();
+                return;
+            }
             var player = other.GetComponentInParent<PlayerController2D>();
             if (player != null && player.isActiveAndEnabled)
             {
