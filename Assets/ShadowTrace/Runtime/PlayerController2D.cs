@@ -20,6 +20,27 @@ namespace ShadowTrace
         private bool sprint;
         private bool hasLandedOnce;
         private bool airborneSinceLanding;
+        private Collider2D groundSupport;
+        private bool leavingByJump;
+
+        public bool RefreshGrounding()
+        {
+            if (Body == null || !TracePhysics.TryGetSupport(Shape, worldMask, hits, out var support, out var surfaceVelocity))
+            {
+                groundSupport = null; leavingByJump = false; IsGrounded = false;
+                return false;
+            }
+            float relativeY = Body.velocity.y - surfaceVelocity.y;
+            bool movingSurface = support.GetComponentInParent<MovingPlatform>() != null;
+            // A platform stopping or reversing must not turn an existing rider into a jumper.
+            bool continuingRide = !leavingByJump && groundSupport == support && movingSurface;
+            // A descending platform must pick up a newly landed rider whose world velocity is zero.
+            bool landingOnPlatform = movingSurface && !leavingByJump && Body.velocity.y <= Mathf.Max(0, surfaceVelocity.y) + 0.1f;
+            IsGrounded = relativeY <= 0.1f || continuingRide || landingOnPlatform;
+            if (relativeY <= 0.1f) leavingByJump = false;
+            groundSupport = IsGrounded ? support : null;
+            return IsGrounded;
+        }
         private readonly RaycastHit2D[] hits = new RaycastHit2D[32];
 
         private void Awake()
@@ -54,9 +75,9 @@ namespace ShadowTrace
 
         private void FixedUpdate()
         {
-            IsGrounded = TracePhysics.Grounded(Shape, worldMask, hits);
+            RefreshGrounding();
             var velocity = Body.velocity;
-            bool supported = IsGrounded && velocity.y <= 0.1f;
+            bool supported = IsGrounded;
             if (!hasLandedOnce) hasLandedOnce = supported;
             else if (airborneSinceLanding && supported)
             {
@@ -66,9 +87,10 @@ namespace ShadowTrace
             if (hasLandedOnce && !supported) airborneSinceLanding = true;
             bool moving = supported && HorizontalInput != 0 && Mathf.Abs(velocity.x) > 0.05f;
             velocity.x = HorizontalInput * (sprint ? sprintSpeed : walkSpeed);
-            if (jumpRequested && IsGrounded && velocity.y <= 0.1f)
+            if (jumpRequested && IsGrounded)
             {
                 velocity.y = jumpSpeed; moving = false; airborneSinceLanding = hasLandedOnce;
+                leavingByJump = true; IsGrounded = false; groundSupport = null;
             }
             GameAudioManager.Instance?.SetFootsteps(moving, sprint);
             jumpRequested = false;

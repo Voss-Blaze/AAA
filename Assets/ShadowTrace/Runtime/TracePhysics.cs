@@ -22,15 +22,29 @@ namespace ShadowTrace
         public static bool Grounded(Collider2D collider, LayerMask mask, RaycastHit2D[] results,
             bool includeShadowPlatforms = true)
         {
+            return TryGetSupport(collider, mask, results, out _, out _, includeShadowPlatforms);
+        }
+
+        public static bool TryGetSupport(Collider2D collider, LayerMask mask, RaycastHit2D[] results,
+            out Collider2D support, out Vector2 surfaceVelocity, bool includeShadowPlatforms = true)
+        {
+            support = null; surfaceVelocity = Vector2.zero;
+            if (collider == null) return false;
+            float nearest = float.PositiveInfinity;
             int count = collider.Cast(Vector2.down, Filter(mask), results, 0.08f);
             for (int i = 0; i < count; i++)
             {
                 var hit = results[i];
                 if (hit.normal.y < 0.5f) continue;
                 var shadow = hit.collider.GetComponentInParent<ShadowActor>();
-                if (IsWorld(hit.collider) || (includeShadowPlatforms && shadow != null && shadow.PlayerCollisionEnabled)) return true;
+                if (hit.distance >= nearest || !(IsWorld(hit.collider) ||
+                    (includeShadowPlatforms && shadow != null && shadow.PlayerCollisionEnabled))) continue;
+                support = hit.collider; nearest = hit.distance;
+                var platform = support.GetComponentInParent<MovingPlatform>();
+                var body = support.attachedRigidbody;
+                surfaceVelocity = platform != null ? platform.MotionVelocity : body != null ? body.GetPointVelocity(hit.point) : Vector2.zero;
             }
-            return false;
+            return support != null;
         }
 
         public static Collider2D Obstacle(Collider2D collider, int direction, float distance,

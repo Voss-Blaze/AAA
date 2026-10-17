@@ -53,7 +53,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 2100000, guid: 3a1904db79ec5e2428512c565aafba7a, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -119,6 +119,7 @@ GameObject:
   - component: {fileID: 7897090847381571772}
   - component: {fileID: 2840536028684461658}
   - component: {fileID: 1412772837819198075}
+  - component: {fileID: 2729644598282004451}
   m_Layer: 0
   m_Name: Shadow
   m_TagString: Untagged
@@ -233,6 +234,10 @@ MonoBehaviour:
   worldMask:
     serializedVersion: 2
     m_Bits: 4294967295
+  stayBodyColor: {r: 0.4, g: 0.7, b: 1, a: 0.8}
+  approachBodyColor: {r: 1, g: 0.6, b: 0.3, a: 0.8}
+  avoidBodyColor: {r: 0.85, g: 0.4, b: 1, a: 0.8}
+  followBodyColor: {r: 0.3, g: 1, b: 0.7, a: 0.8}
 --- !u!114 &1412772837819198075
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -245,3 +250,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac220c32fb4502f47a841cfbf5e75534, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &2729644598282004451
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4025869997162743680}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40233f85c0054f00b4971954c1a78418, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  source: {fileID: 4438859981911371354}
+  selected: 0
+  outlineEnabled: 1
+  outlineColor: {r: 1, g: 0.65, b: 0.12, a: 1}
+  outlineWidth: 10
+  glowEnabled: 1
+  glowRadius: 24
+  glowIntensity: 3
+  glowOpacity: 0.5
+  inheritBodyOpacity: 1

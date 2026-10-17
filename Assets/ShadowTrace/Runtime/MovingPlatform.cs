@@ -6,7 +6,7 @@ namespace ShadowTrace
     /// 移动平台：在「初始位置」与「初始位置 + offset」之间往返，由 ShadowMoverPlate 这类机关驱动。
     /// 支持两种驱动方式：持续按压（SetPressed）与按一下（PressOnce）。
     /// </summary>
-    [DisallowMultipleComponent, RequireComponent(typeof(Rigidbody2D), typeof(BoxCollider2D))]
+    [DefaultExecutionOrder(-100), DisallowMultipleComponent, RequireComponent(typeof(Rigidbody2D), typeof(BoxCollider2D))]
     public sealed class MovingPlatform : MonoBehaviour
     {
         [Tooltip("相对初始位置的世界位移：决定平台走多远、往哪边走。例如 (0,2) 向上 2 格，(3,0) 向右 3 格。")]
@@ -32,6 +32,7 @@ namespace ShadowTrace
 
         /// <summary>持续按压模式下是否正被踩着。</summary>
         public bool IsPressed { get; private set; }
+        public Vector2 MotionVelocity { get; private set; }
 
         private const float ArriveSqrEpsilon = 0.0001f;
         private Rigidbody2D body;
@@ -82,6 +83,7 @@ namespace ShadowTrace
 
         private void FixedUpdate()
         {
+            MotionVelocity = Vector2.zero;
             if (body == null || offset.sqrMagnitude <= 0f)
             {
                 IsMoving = false;
@@ -123,6 +125,7 @@ namespace ShadowTrace
             if ((here - goal).sqrMagnitude <= ArriveSqrEpsilon) return true;
             Vector2 next = Vector2.MoveTowards(here, goal, speed * Time.fixedDeltaTime);
             if (next == here) return false;
+            MotionVelocity = (next - here) / Time.fixedDeltaTime;
             body.MovePosition(next);
             if (carryRiders) CarryRiders(next - here);
             return false;
@@ -145,7 +148,9 @@ namespace ShadowTrace
                 if (collider == null) continue;
                 var rider = collider.attachedRigidbody;
                 if (rider == null || rider == body || !rider.simulated) continue;
-                if (rider.velocity.y > 0.1f) continue;   // 正在起跳的不算站在平台上
+                var player = rider.GetComponent<PlayerController2D>();
+                if (player != null && !player.RefreshGrounding()) continue;
+                if (player == null && rider.velocity.y > Mathf.Max(0, MotionVelocity.y) + 0.1f) continue;
                 rider.position += delta;
             }
         }

@@ -18,7 +18,6 @@ namespace ShadowTrace
         private Animator animator;
         private SpriteRenderer sprite;
         private float castUntil;
-        private readonly RaycastHit2D[] hits = new RaycastHit2D[32];
 
         private void OnEnable()
         {
@@ -30,8 +29,7 @@ namespace ShadowTrace
             if (ability != null) ability.ShadowSpawned += OnShadowSpawned;
         }
 
-        private bool Grounded => player != null ? player.Body != null && player.Body.velocity.y <= 0.1f &&
-            TracePhysics.Grounded(player.Shape, player.worldMask, hits) : shadow != null && shadow.IsGrounded;
+        private bool Grounded => player != null ? player.RefreshGrounding() : shadow != null && shadow.IsGrounded;
 
         private void OnShadowSpawned()
         {
@@ -45,7 +43,7 @@ namespace ShadowTrace
             var body = player != null ? player.Body : shadow != null ? shadow.Body : null;
             if (body == null || animator == null || sprite == null) return;
             bool grounded = Grounded;
-            bool moving = Mathf.Abs(body.velocity.x) > MovementThreshold;
+            bool moving = Mathf.Abs(body.velocity.x) > MovementThreshold && (player == null || player.HorizontalInput != 0);
             int direction = player != null ? player.HorizontalInput : shadow.AnimationDirection;
             if (direction != 0) sprite.flipX = direction < 0;
             if (!grounded || moving || (player != null && direction != 0)) castUntil = 0;

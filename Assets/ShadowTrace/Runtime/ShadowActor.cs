@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace ShadowTrace
 {
-    [RequireComponent(typeof(Rigidbody2D), typeof(BoxCollider2D))]
+    [RequireComponent(typeof(Rigidbody2D), typeof(BoxCollider2D), typeof(ShadowSelectionGlow))]
     public sealed class ShadowActor : MonoBehaviour
     {
         [Min(0.01f)] public float obstacleDistance = 0.08f;
@@ -10,6 +10,12 @@ namespace ShadowTrace
         [Min(0.05f)] public float blockedDuration = 0.4f;
         [Min(0.1f)] public float pushForce = 35;
         public LayerMask worldMask = ~0;
+        [Header("影子身体颜色")]
+        [Tooltip("身体颜色；A 控制身体与眼睛的整体透明度，眼睛的 RGB 保持白色。")]
+        public Color stayBodyColor = new Color(0.4f, 0.7f, 1f, 0.8f);
+        public Color approachBodyColor = new Color(1f, 0.6f, 0.3f, 0.8f);
+        public Color avoidBodyColor = new Color(0.85f, 0.4f, 1f, 0.8f);
+        public Color followBodyColor = new Color(0.3f, 1f, 0.7f, 0.8f);
         public ShadowKind Kind { get; private set; }
         public int Number { get; private set; }
         public bool Stopped { get; private set; }
@@ -21,6 +27,7 @@ namespace ShadowTrace
         public int AnimationDirection => Kind == ShadowKind.Follow && player != null ? player.HorizontalInput : direction;
         private Rigidbody2D body;
         private SpriteRenderer sprite;
+        private ShadowSelectionGlow selectionGlow;
         private PlayerController2D player;
         private ShadowManager manager;
         private bool jumpRequested;
@@ -39,6 +46,7 @@ namespace ShadowTrace
             body = GetComponent<Rigidbody2D>();
             Shape = GetComponent<BoxCollider2D>();
             sprite = GetComponentInChildren<SpriteRenderer>();
+            selectionGlow = GetComponent<ShadowSelectionGlow>();
         }
 
         public void Initialize(ShadowKind kind, int number, int initialDirection,
@@ -65,10 +73,11 @@ namespace ShadowTrace
                 body.gravityScale = player.Body.gravityScale;
             }
             if (kind == ShadowKind.Follow) player.JumpRequested += OnPlayerJumpRequested;
-            baseColor = kind == ShadowKind.Stay ? new Color(0.4f, 0.7f, 1f, 0.8f) :
-                kind == ShadowKind.Approach ? new Color(1f, 0.6f, 0.3f, 0.8f) :
-                kind == ShadowKind.Avoid ? new Color(0.85f, 0.4f, 1f, 0.8f) : new Color(0.3f, 1f, 0.7f, 0.8f);
+            baseColor = kind == ShadowKind.Stay ? stayBodyColor :
+                kind == ShadowKind.Approach ? approachBodyColor :
+                kind == ShadowKind.Avoid ? avoidBodyColor : followBodyColor;
             sprite.color = baseColor;
+            if (selectionGlow != null) selectionGlow.SetSelected(false);
             Physics2D.IgnoreCollision(Shape, player.Shape, true);
             initialized = true;
             ConfigureNumberLabel();
@@ -116,7 +125,7 @@ namespace ShadowTrace
 
         public void SetSelected(bool selected)
         {
-            if (sprite != null) sprite.color = selected ? Color.yellow : baseColor;
+            if (selectionGlow != null) selectionGlow.SetSelected(selected);
         }
 
         public void Despawn()

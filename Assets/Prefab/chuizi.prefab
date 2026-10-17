@@ -172,7 +172,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c6785fc4d7c08e64c9c513bb1f36f951, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  offset: {x: 0, y: -3}
+  offset: {x: 0, y: 3.5}
   speed: 2
   carryRiders: 1
 --- !u!114 &7988895213304917358

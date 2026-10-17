@@ -97,6 +97,40 @@ namespace ShadowTrace.Tests
             Physics2D.SyncTransforms(); Animate(driver); AssertState(ActorMotionState.Walk);
         }
 
+        [TestCase(0f, 2f)] [TestCase(2f, 0f)] [TestCase(0f, -2f)]
+        public void MovingPlatformRiderStaysGroundedAndIdleThenCanJump(float x, float y)
+        {
+            floor.SetActive(false);
+            var platformObject = new GameObject("Animation moving platform");
+            try
+            {
+                platformObject.transform.position = new Vector3(0, -1.5f, 0);
+                var platform = platformObject.AddComponent<MovingPlatform>();
+                platform.GetComponent<BoxCollider2D>().size = new Vector2(10, 1);
+                platform.offset = new Vector2(x, y); platform.speed = 2; platform.SetPressed(true);
+                player.Body.gravityScale = 0;
+                Physics2D.SyncTransforms();
+                Input(0);
+                for (int i = 0; i < 12; i++)
+                {
+                    typeof(MovingPlatform).GetMethod("FixedUpdate", Private).Invoke(platform, null);
+                    typeof(PlayerController2D).GetMethod("FixedUpdate", Private).Invoke(player, null);
+                    Physics2D.Simulate(0.02f); Physics2D.SyncTransforms();
+                    Animate(driver); AssertState(ActorMotionState.Idle);
+                    Assert.IsTrue(player.IsGrounded);
+                }
+                platform.offset = Vector2.zero;
+                player.Body.velocity = new Vector2(0, Mathf.Max(0, y));
+                typeof(MovingPlatform).GetMethod("FixedUpdate", Private).Invoke(platform, null);
+                Animate(driver); AssertState(ActorMotionState.Idle);
+                player.RequestJump();
+                typeof(PlayerController2D).GetMethod("FixedUpdate", Private).Invoke(player, null);
+                Animate(driver); AssertState(ActorMotionState.Jump);
+                Assert.Greater(player.Body.velocity.y, 5);
+            }
+            finally { Object.DestroyImmediate(platformObject); }
+        }
+
         [UnityTest] public IEnumerator SuccessfulCastExpiresWithoutLockingMovement()
         {
             Finish(); Assert.AreEqual(1, manager.Count); AssertState(ActorMotionState.Shadowtrace);
@@ -116,16 +150,22 @@ namespace ShadowTrace.Tests
         [TestCase(ShadowKind.Avoid)] [TestCase(ShadowKind.Follow)]
         public void ShadowsUseTheirOwnMotionAndKeepSelectionTint(ShadowKind kind)
         {
-            Assert.IsTrue(manager.TrySpawn(kind, new Vector2(4, -0.285f), -1));
+            var prefabShape = manager.shadowPrefab.GetComponent<BoxCollider2D>();
+            var scale = manager.shadowPrefab.transform.lossyScale;
+            float halfHeight = prefabShape.size.y * Mathf.Abs(scale.y) * 0.5f;
+            var origin = new Vector2(4, -1 + halfHeight + 0.015f - prefabShape.offset.y * scale.y);
+            Assert.IsTrue(manager.TrySpawn(kind, origin, -1));
             var shadow = manager.Actors[0];
             var animation = shadow.GetComponent<ActorAnimationDriver>();
             Input(1, true); player.Body.velocity = new Vector2(7, 0);
             shadow.Body.velocity = kind == ShadowKind.Stay ? Vector2.zero : new Vector2(-4, 0);
             Animate(animation);
             Assert.AreEqual(kind == ShadowKind.Stay ? ActorMotionState.Idle : ActorMotionState.Walk, animation.State);
+            var bodyColor = shadow.GetComponentInChildren<SpriteRenderer>().color;
             manager.Select(0); Animate(animation);
-            Assert.AreEqual(Color.yellow, shadow.GetComponentInChildren<SpriteRenderer>().color);
-            Assert.AreEqual(Vector2.zero, shadow.Shape.offset);
+            Assert.IsTrue(shadow.GetComponent<ShadowSelectionGlow>().selected);
+            Assert.AreEqual(bodyColor, shadow.GetComponentInChildren<SpriteRenderer>().color);
+            Assert.AreEqual(prefabShape.offset, shadow.Shape.offset);
             if (kind == ShadowKind.Stay) return;
             shadow.Body.position = new Vector2(4, 4); shadow.Body.velocity = new Vector2(-4, -2);
             Physics2D.SyncTransforms(); Animate(animation); Assert.AreEqual(ActorMotionState.Jump, animation.State);
@@ -172,7 +212,7 @@ namespace ShadowTrace.Tests
             Assert.AreEqual(2, grounds);
             Assert.IsTrue(manager.TrySpawn(ShadowKind.Follow, new Vector2(player.Body.position.x, player.Body.position.y), 1));
             manager.Select(0);
-            Assert.AreEqual(Color.yellow, manager.Actors[0].GetComponentInChildren<SpriteRenderer>().color);
+            Assert.IsTrue(manager.Actors[0].GetComponent<ShadowSelectionGlow>().selected);
             manager.ClearAll();
         }
 

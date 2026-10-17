@@ -17,8 +17,28 @@ namespace ShadowTrace
         public ShadowTraceHUD hud;
         [Min(0)] public float deathFadeDuration = 0.35f;
         [Min(0)] public float deathBlackDuration = 0.35f;
+        [Tooltip("进入 Log 后，从黑屏恢复画面的时长（秒）。")]
+        [Min(0)] public float deathRevealDuration = 0.6f;
         [Min(0.1f)] public float groundSearchDistance = 20;
         private bool returningToMenu;
+
+        private void Awake() { EnsureDeathBlackout(); }
+
+        private void EnsureDeathBlackout()
+        {
+            if (deathBlackout == null || deathBlackout.GetComponentInChildren<Button>(true) == null) return;
+            // Legacy scenes used the pause background for death too. Never activate its menu children.
+            var parent = deathBlackout.transform.parent;
+            var root = new GameObject("Death Blackout", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            root.transform.SetParent(parent, false);
+            var rect = root.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero; rect.offsetMax = Vector2.zero;
+            deathBlackout = root.GetComponent<Image>();
+            deathBlackout.color = new Color(0, 0, 0, 0);
+            deathBlackout.raycastTarget = true;
+            root.SetActive(false);
+        }
 
         private void Update() { if (Input.GetKeyDown(KeyCode.Q)) ExitLevel(); }
 
@@ -29,6 +49,28 @@ namespace ShadowTrace
             var ability = player != null ? player.GetComponent<ShadowTraceAbility>() : null;
             if (ability != null) ability.CancelTrace();
             ReturnToMenu();
+        }
+
+        public void ReloadLevel(bool fromCheckpoint)
+        {
+            if (returningToMenu || LevelStoryController.InputBlocked || (life != null && life.IsDead)) return;
+            bool canResume = false;
+            if (fromCheckpoint && SaveGameService.Current.TryRead(out var data) && data.scenePath == gameObject.scene.path)
+            {
+                if (lamps != null) foreach (var lamp in lamps)
+                    if (lamp != null && lamp.checkpointId == data.checkpointId && SafePosition(data.position, out _))
+                    { canResume = true; break; }
+            }
+            if (canResume)
+            {
+                if (!SaveGameService.Current.BeginResume(gameObject.scene.path)) return;
+            }
+            else if (!SaveGameService.Current.BeginNewGame()) return;
+            returningToMenu = true;
+            if (player != null) player.GetComponent<ShadowTraceAbility>()?.CancelTrace();
+            GameAudioManager.Instance?.StopGameplaySounds();
+            Time.timeScale = 1;
+            SceneManager.LoadScene(gameObject.scene.path);
         }
 
         private void OnEnable()
@@ -132,6 +174,7 @@ namespace ShadowTrace
 
         private IEnumerator DeathTransition()
         {
+            EnsureDeathBlackout();
             if (deathBlackout != null)
             {
                 deathBlackout.transform.SetAsLastSibling();
@@ -147,7 +190,8 @@ namespace ShadowTrace
             }
             if (deathBlackout != null) deathBlackout.color = Color.black;
             yield return new WaitForSecondsRealtime(deathBlackDuration);
-            ReturnToMenu();
+            Time.timeScale = 1;
+            SceneFadeOverlay.LoadThroughBlack(menuScenePath, deathRevealDuration);
         }
 
         private void ReturnToMenu()

@@ -12,6 +12,10 @@ namespace ShadowTrace
         public Sprite playSprite;
         public GameObject blackout;
         public PlayerLife life;
+        public Button continueButton;
+        public Button checkpointButton;
+        public Button restartButton;
+        public LevelCheckpointController checkpoint;
         public bool IsPaused { get; private set; }
         private float previousTimeScale;
         private bool restoreTimeOnDestroy;
@@ -27,10 +31,39 @@ namespace ShadowTrace
                 button.navigation = navigation;
                 ClearButtonSelection();
             }
+            DisableNavigation(continueButton);
+            DisableNavigation(checkpointButton);
+            DisableNavigation(restartButton);
             Refresh();
         }
 
-        private void OnEnable() { if (button != null) button.onClick.AddListener(TogglePause); }
+        private static void DisableNavigation(Button target)
+        {
+            if (target == null) return;
+            var navigation = target.navigation; navigation.mode = Navigation.Mode.None;
+            target.navigation = navigation;
+        }
+
+        private void OnEnable()
+        {
+            if (life != null) life.Died += HideForDeath;
+            if (button != null) button.onClick.AddListener(TogglePause);
+            if (continueButton != null) continueButton.onClick.AddListener(ContinueGame);
+            if (checkpointButton != null) checkpointButton.onClick.AddListener(ReturnToCheckpoint);
+            if (restartButton != null) restartButton.onClick.AddListener(RestartLevel);
+        }
+
+        private void HideForDeath()
+        {
+            // Death owns the freeze now; hide the menu without briefly resuming gameplay.
+            if (IsPaused) restoreTimeOnDestroy = true;
+            IsPaused = false;
+            Refresh();
+        }
+
+        public void ContinueGame() { if (IsPaused) TogglePause(); }
+        public void ReturnToCheckpoint() { if (IsPaused && checkpoint != null) checkpoint.ReloadLevel(true); }
+        public void RestartLevel() { if (IsPaused && checkpoint != null) checkpoint.ReloadLevel(false); }
 
         private void Update()
         {
@@ -75,7 +108,11 @@ namespace ShadowTrace
 
         private void OnDisable()
         {
+            if (life != null) life.Died -= HideForDeath;
             if (button != null) button.onClick.RemoveListener(TogglePause);
+            if (continueButton != null) continueButton.onClick.RemoveListener(ContinueGame);
+            if (checkpointButton != null) checkpointButton.onClick.RemoveListener(ReturnToCheckpoint);
+            if (restartButton != null) restartButton.onClick.RemoveListener(RestartLevel);
             if (IsPaused)
             {
                 restoreTimeOnDestroy = life != null && life.IsDead;
