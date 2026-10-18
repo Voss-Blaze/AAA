@@ -234,10 +234,10 @@ MonoBehaviour:
   worldMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  stayBodyColor: {r: 0.03137255, g: 0.10980393, b: 0.015686275, a: 1}
-  approachBodyColor: {r: 1, g: 0.6, b: 0.3, a: 0.8}
-  avoidBodyColor: {r: 0.85, g: 0.4, b: 1, a: 0.8}
-  followBodyColor: {r: 0.3, g: 1, b: 0.7, a: 0.8}
+  stayBodyColor: {r: 0.31835172, g: 0.82641506, b: 0.21673898, a: 1}
+  approachBodyColor: {r: 0.90188676, g: 0.05505661, b: 0, a: 0.8}
+  avoidBodyColor: {r: 0.7516341, g: 0, b: 1, a: 0.8}
+  followBodyColor: {r: 0, g: 1, b: 0.9981642, a: 0.8}
 --- !u!114 &1412772837819198075
 MonoBehaviour:
   m_ObjectHideFlags: 0
