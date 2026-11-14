@@ -126,12 +126,12 @@ TextureImporter:
       name: 62d99388acbd3c1bc96d570bfff16130_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 420
-        width: 1774
-        height: 444
+        x: 269
+        y: 458
+        width: 1271
+        height: 258
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -147,13 +147,13 @@ TextureImporter:
       name: 62d99388acbd3c1bc96d570bfff16130_1
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0.5
-        width: 1774
-        height: 443.5
+        x: 269
+        y: 89
+        width: 1268
+        height: 258
       alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 3, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
