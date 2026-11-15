@@ -30,6 +30,9 @@ namespace ShadowTrace.Tests
             floor.AddComponent<BoxCollider2D>().size = new Vector2(40, 1);
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/ShadowTrace/Prefabs/Player.prefab");
             player = Object.Instantiate(prefab, new Vector3(0, -0.285f), Quaternion.identity).GetComponent<PlayerController2D>();
+            player.transform.localScale = Vector3.one;
+            player.Shape.size = new Vector2(0.8f, 1.4f);
+            player.Shape.offset = Vector2.zero;
             player.enabled = false;
             ability = player.GetComponent<ShadowTraceAbility>(); ability.enabled = false;
             driver = player.GetComponent<ActorAnimationDriver>();
@@ -55,10 +58,82 @@ namespace ShadowTrace.Tests
             typeof(PlayerController2D).GetField("sprint", Private).SetValue(player, sprint);
         }
 
-        private static void Animate(ActorAnimationDriver target)
+        private static void Animate(ActorAnimationDriver target, bool refreshGrounding = true)
         {
+            // Arrangement-only tests explicitly sample their teleported bodies.
+            // Simulation tests consume the controller's fixed-step state like runtime.
+            var controller = target.GetComponent<PlayerController2D>();
+            if (refreshGrounding && controller != null) controller.RefreshGrounding();
             typeof(ActorAnimationDriver).GetMethod("LateUpdate", Private).Invoke(target, null);
             target.GetComponentInChildren<Animator>().Update(0.02f);
+        }
+
+        [TestCase(4f, 0f, false)] [TestCase(0f, 4f, false)]
+        [TestCase(0f, -4f, true)] [TestCase(3f, 3f, true)]
+        [TestCase(3f, -3f, false)]
+        public void WalkingRiderKeepsGroundAnimationAcrossPlatformReverseAndStop(float x, float y, bool sprint)
+        {
+            floor.SetActive(false);
+            var root = new GameObject("Walking animation platform");
+            try
+            {
+                root.transform.position = new Vector3(0, -1.5f);
+                var platform = root.AddComponent<MovingPlatform>();
+                platform.GetComponent<BoxCollider2D>().size = new Vector2(40, 1);
+                platform.offset = new Vector2(x, y);
+                platform.speed = 4;
+                player.Body.gravityScale = 3;
+                Input(1, sprint);
+                var platformStep = typeof(MovingPlatform).GetMethod("FixedUpdate", Private);
+                var playerStep = typeof(PlayerController2D).GetMethod("FixedUpdate", Private);
+                Physics2D.SyncTransforms();
+                float expectedRelativeX = 0;
+                for (int i = 0; i < 120; i++)
+                {
+                    platform.SetPressed(i < 45);
+                    platformStep.Invoke(platform, null);
+                    playerStep.Invoke(player, null);
+                    Physics2D.Simulate(0.02f);
+                    Physics2D.SyncTransforms();
+                    Animate(driver, false);
+                    AssertState(sprint ? ActorMotionState.Run : ActorMotionState.Walk);
+                    Assert.IsTrue(player.IsGrounded, "Support lost at step " + i);
+                    expectedRelativeX += (sprint ? player.sprintSpeed : player.walkSpeed) * 0.02f;
+                    Assert.AreEqual(expectedRelativeX, player.Body.position.x - platform.Position.x, 0.08f,
+                        "Platform displacement must be applied once.");
+                }
+                player.RequestJump();
+                playerStep.Invoke(player, null);
+                Animate(driver, false);
+                AssertState(ActorMotionState.Jump);
+            }
+            finally { Object.DestroyImmediate(root); }
+        }
+
+        [Test] public void PlatformAnimationGraceDoesNotGrantGroundingOrHideRealDeparture()
+        {
+            var platform = floor.AddComponent<MovingPlatform>();
+            platform.offset = Vector2.zero;
+            var step = typeof(PlayerController2D).GetMethod("FixedUpdate", Private);
+            Physics2D.SyncTransforms();
+            step.Invoke(player, null);
+            Animate(driver, false); AssertState(ActorMotionState.Idle);
+            floor.GetComponent<BoxCollider2D>().enabled = false;
+            step.Invoke(player, null);
+            Assert.IsFalse(player.IsGrounded);
+            Animate(driver, false); AssertState(ActorMotionState.Idle);
+            player.RequestJump();
+            step.Invoke(player, null);
+            Assert.LessOrEqual(player.Body.velocity.y, 0, "Visual grace must not allow an airborne jump.");
+            for (int i = 0; i < 5; i++) step.Invoke(player, null);
+            Animate(driver, false); AssertState(ActorMotionState.Jump);
+            // Animation must never re-query physics or clear the last fixed-step state.
+            floor.GetComponent<BoxCollider2D>().enabled = true;
+            Physics2D.SyncTransforms();
+            Animate(driver, false); AssertState(ActorMotionState.Jump);
+            Assert.IsFalse(player.IsGrounded);
+            step.Invoke(player, null);
+            Animate(driver, false); AssertState(ActorMotionState.Idle);
         }
 
         private void Finish(bool valid = true)

@@ -29,12 +29,16 @@ namespace ShadowTrace
             if (ability != null) ability.ShadowSpawned += OnShadowSpawned;
         }
 
-        private bool Grounded => player != null ? player.RefreshGrounding() : shadow != null && shadow.IsGrounded;
+        private bool Grounded => player != null ? player.IsGroundedForAnimation : shadow != null && shadow.IsGrounded;
+
+        private Vector2 RelativeVelocity => player != null
+            ? player.Body.velocity - player.SupportVelocity
+            : shadow != null ? shadow.Body.velocity : Vector2.zero;
 
         private void OnShadowSpawned()
         {
             if (player != null && Grounded && player.HorizontalInput == 0 &&
-                Mathf.Abs(player.Body.velocity.x) <= MovementThreshold)
+                Mathf.Abs(RelativeVelocity.x) <= MovementThreshold)
                 castUntil = Time.time + CastDuration;
         }
 
@@ -43,7 +47,7 @@ namespace ShadowTrace
             var body = player != null ? player.Body : shadow != null ? shadow.Body : null;
             if (body == null || animator == null || sprite == null) return;
             bool grounded = Grounded;
-            bool moving = Mathf.Abs(body.velocity.x) > MovementThreshold && (player == null || player.HorizontalInput != 0);
+            bool moving = Mathf.Abs(RelativeVelocity.x) > MovementThreshold && (player == null || player.HorizontalInput != 0);
             int direction = player != null ? player.HorizontalInput : shadow.AnimationDirection;
             if (direction != 0) sprite.flipX = direction < 0;
             if (!grounded || moving || (player != null && direction != 0)) castUntil = 0;

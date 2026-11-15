@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -102,6 +103,12 @@ namespace ShadowTrace
         private void Start()
         {
             if (!SaveGameService.Current.ConsumeResume(gameObject.scene.path, out var data)) return;
+            if (!RestoreDoors(data))
+            {
+                SaveGameService.Current.ShowNewGameHint = true;
+                ReturnToMenu();
+                return;
+            }
             ShadowLamp savedLamp = null;
             if (lamps != null)
                 foreach (var lamp in lamps)
@@ -151,17 +158,52 @@ namespace ShadowTrace
                 Debug.LogWarning("Checkpoint respawn point is blocked or has no safe ground: " + lamp.name, lamp);
                 return;
             }
+            var openedDoorIds = new List<string>();
+            var seenIds = new HashSet<string>();
+            foreach (var door in SceneDoors())
+            {
+                if (string.IsNullOrEmpty(door.saveId) || !seenIds.Add(door.saveId))
+                {
+                    Debug.LogError("Doors need unique checkpoint IDs: " + door.name, door);
+                    return;
+                }
+                if (door.IsPermanentlyOpen) openedDoorIds.Add(door.saveId);
+            }
             bool saved = SaveGameService.Current.TrySave(new SaveGameService.Checkpoint
             {
                 scenePath = gameObject.scene.path,
                 checkpointId = lamp.checkpointId,
-                position = position
+                position = position,
+                openedDoorIds = openedDoorIds.ToArray()
             });
             if (saved && hud != null && hud.manager != null && hud.manager.uiSettings != null)
             {
                 var settings = hud.manager.uiSettings;
                 hud.ShowPriorityMessage(settings.saveSucceeded, settings.saveNoticeDuration);
             }
+        }
+
+        private List<InteractiveDoor> SceneDoors()
+        {
+            var result = new List<InteractiveDoor>();
+            foreach (var root in gameObject.scene.GetRootGameObjects())
+                result.AddRange(root.GetComponentsInChildren<InteractiveDoor>(true));
+            return result;
+        }
+
+        private bool RestoreDoors(SaveGameService.Checkpoint data)
+        {
+            var doors = new Dictionary<string, InteractiveDoor>();
+            foreach (var door in SceneDoors())
+            {
+                if (string.IsNullOrEmpty(door.saveId) || doors.ContainsKey(door.saveId)) return false;
+                doors.Add(door.saveId, door);
+            }
+            foreach (var id in data.openedDoorIds)
+                if (string.IsNullOrEmpty(id) || !doors.ContainsKey(id)) return false;
+            foreach (var id in data.openedDoorIds) doors[id].RestoreOpen();
+            Physics2D.SyncTransforms();
+            return true;
         }
 
         private void OnDeath()

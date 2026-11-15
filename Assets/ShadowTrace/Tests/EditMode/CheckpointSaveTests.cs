@@ -64,5 +64,19 @@ namespace ShadowTrace.Tests
             Assert.IsFalse(saves.TryRead(out _));
             Assert.IsFalse(saves.ConsumeResume("Assets/Scenes/Level 1.unity", out _));
         }
+
+        [Test] public void OpenedDoorsSurviveRestartAndOlderCheckpointRemainsUntouched()
+        {
+            var data = Data("lamp");
+            data.openedDoorIds = new[] { "door-a", "door-b" };
+            Assert.IsTrue(saves.TrySave(data));
+            Assert.IsTrue(new SaveGameService(directory).TryRead(out var loaded));
+            CollectionAssert.AreEqual(data.openedDoorIds, loaded.openedDoorIds);
+            data.version = 1;
+            var legacy = JsonUtility.ToJson(data);
+            File.WriteAllText(saves.FilePath, legacy);
+            Assert.IsFalse(saves.BeginResume(data.scenePath));
+            Assert.AreEqual(legacy, File.ReadAllText(saves.FilePath));
+        }
     }
 }

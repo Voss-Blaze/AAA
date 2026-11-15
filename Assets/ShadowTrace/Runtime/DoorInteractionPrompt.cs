@@ -37,7 +37,7 @@ namespace ShadowTrace
             var player = door.player;
             var life = player != null ? player.GetComponent<PlayerLife>() : null;
             bool visible = Time.timeScale > 0 && !LevelStoryController.InputBlocked &&
-                (life == null || !life.IsDead) && door.Contains(player);
+                (life == null || !life.IsDead) && !door.IsPermanentlyOpen && door.Contains(player);
             Label.gameObject.SetActive(visible);
             if (!visible) return;
             var bounds = sprite != null ? sprite.bounds : GetComponent<BoxCollider2D>().bounds;

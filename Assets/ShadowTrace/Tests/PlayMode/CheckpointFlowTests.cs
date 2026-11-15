@@ -78,6 +78,10 @@ namespace ShadowTrace.Tests
         {
             var menu = Find<MainMenuController>();
             menu.resumeButton.onClick.Invoke(); Assert.IsTrue(menu.resumePanel.activeSelf);
+            Assert.IsNotNull(menu.resumeOKButton);
+            Assert.IsNotNull(menu.resumeNOButton);
+            Assert.IsTrue(menu.resumeOKButton.IsInteractable());
+            Assert.IsTrue(menu.resumeNOButton.IsInteractable());
             menu.resumeNOButton.onClick.Invoke(); Assert.IsFalse(menu.resumePanel.activeSelf);
             Assert.IsFalse(menu.noSaveHint.activeSelf);
             menu.resumeButton.onClick.Invoke(); menu.resumeOKButton.onClick.Invoke();
@@ -94,14 +98,29 @@ namespace ShadowTrace.Tests
         {
             yield return NewGame();
             var controller = Find<LevelCheckpointController>();
+            var doors = SceneManager.GetActiveScene().GetRootGameObjects()
+                .SelectMany(g => g.GetComponentsInChildren<InteractiveDoor>(true)).ToArray();
+            Assert.AreEqual(4, doors.Length);
+            Assert.AreEqual(4, doors.Select(d => d.saveId).Distinct().Count());
+            Assert.IsTrue(doors.All(d => !string.IsNullOrEmpty(d.saveId)));
+            var openedId = doors[0].saveId;
+            doors[0].RestoreOpen();
             yield return Light(controller.lamps[0]);
             Assert.IsTrue(SaveGameService.Current.TryRead(out var data));
+            CollectionAssert.AreEquivalent(new[] { openedId }, data.openedDoorIds);
             SaveGameService.Current = new SaveGameService(directory);
             SceneManager.LoadScene(MenuPath); yield return null; yield return null;
             var menu = Find<MainMenuController>();
             menu.resumeButton.onClick.Invoke(); menu.resumeOKButton.onClick.Invoke();
             yield return null; yield return null;
             controller = Find<LevelCheckpointController>();
+            doors = SceneManager.GetActiveScene().GetRootGameObjects()
+                .SelectMany(g => g.GetComponentsInChildren<InteractiveDoor>(true)).ToArray();
+            foreach (var door in doors)
+            {
+                Assert.AreEqual(door.saveId == openedId, door.IsPermanentlyOpen);
+                Assert.AreEqual(door.saveId != openedId, door.GetComponent<BoxCollider2D>().enabled);
+            }
             Assert.That(Vector2.Distance(controller.player.Body.position, data.position), Is.LessThan(0.1f));
             Assert.IsTrue(controller.lamps.Single(l => l.checkpointId == data.checkpointId).IsLit);
             Assert.AreEqual(0, Find<ShadowManager>().Count);
@@ -114,6 +133,8 @@ namespace ShadowTrace.Tests
             SceneManager.LoadScene(MenuPath); yield return null; yield return null;
             yield return NewGame();
             Assert.IsFalse(SaveGameService.Current.TryRead(out _), "Start must clear the old checkpoint");
+            Assert.IsTrue(SceneManager.GetActiveScene().GetRootGameObjects()
+                .SelectMany(g => g.GetComponentsInChildren<InteractiveDoor>(true)).All(d => !d.IsPermanentlyOpen));
             story = Find<LevelStoryController>();
             story.checkpoint.player.Body.gravityScale = 0;
             yield return new WaitForSecondsRealtime(2.3f);

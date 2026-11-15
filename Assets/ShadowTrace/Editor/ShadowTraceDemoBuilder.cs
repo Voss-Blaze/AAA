@@ -54,7 +54,8 @@ namespace ShadowTrace.Editor
             var player = AssetDatabase.LoadAssetAtPath<GameObject>(Root + "/Prefabs/Player.prefab");
             if (player == null)
             {
-                var temporary = Actor("Player", sprite, surface, new Color(0.95f, 0.95f, 1));
+                var playerSurface = AssetDatabase.LoadAssetAtPath<PhysicsMaterial2D>(Root + "/Art/PlayerSurface.physicsMaterial2D");
+                var temporary = Actor("Player", sprite, playerSurface, new Color(0.95f, 0.95f, 1));
                 temporary.AddComponent<PlayerController2D>();
                 temporary.AddComponent<ShadowTraceAbility>();
                 player = PrefabUtility.SaveAsPrefabAsset(temporary, Root + "/Prefabs/Player.prefab");

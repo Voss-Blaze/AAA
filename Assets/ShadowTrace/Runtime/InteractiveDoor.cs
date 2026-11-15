@@ -13,12 +13,16 @@ namespace ShadowTrace
         public BoxCollider2D interactionArea;
         public Sprite closedSprite;
         public Sprite openSprite;
+        [Tooltip("Unique, stable ID within this scene for checkpoint persistence.")]
+        public string saveId;
+        public bool IsPermanentlyOpen { get; private set; }
         public bool PassageGranted => passer != null;
         public event System.Action<InteractiveDoor> Passed;
         public bool IsUnlocked
         {
             get
             {
+                if (IsPermanentlyOpen) return true;
                 if (plates.Count == 0) return true;
                 foreach (var plate in plates)
                 {
@@ -54,18 +58,19 @@ namespace ShadowTrace
         public bool TryPass(PlayerController2D visitor)
         {
             if (Time.timeScale <= 0 || visitor == null || !visitor.isActiveAndEnabled ||
-                !Contains(visitor) || passer != null) return false;
+                !Contains(visitor) || passer != null || IsPermanentlyOpen) return false;
             RefreshPlates();
             if (!IsUnlocked) return false;
             passer = visitor;
             Physics2D.IgnoreCollision(blocker, visitor.Shape, true);
+            RestoreOpen();
             var ability = visitor.GetComponent<ShadowTraceAbility>();
             if (ability != null)
             {
                 ability.CancelTrace();
                 if (ability.manager != null) ability.manager.ClearAll();
             }
-            // Re-query after clearing: sustained plates release without revoking this safe passage.
+            // Plates may release; the completed door remains open.
             RefreshPlates();
             RefreshAppearance();
             GameAudioManager.Instance?.PlaySound(GameSound.DoorOpen);
@@ -84,6 +89,14 @@ namespace ShadowTrace
         {
             var frame = IsUnlocked ? openSprite : closedSprite;
             if (frame != null && sprite != null) sprite.sprite = frame;
+        }
+
+        public void RestoreOpen()
+        {
+            IsPermanentlyOpen = true;
+            if (blocker == null) blocker = GetComponent<BoxCollider2D>();
+            blocker.enabled = false;
+            RefreshAppearance();
         }
 
         private void RefreshPlates()

@@ -67,7 +67,7 @@ namespace ShadowTrace.Tests
         [Test] public void ActualSampleShadowPrefabLandsOnGroundAndActivatesTrigger()
         {
             manager.shadowPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/ShadowTrace/Prefabs/SampleShadow.prefab").GetComponent<ShadowActor>();
+                "Assets/Prefab/SampleShadow.prefab").GetComponent<ShadowActor>();
             Assert.IsTrue(manager.TrySpawn(ShadowKind.Stay, new Vector2(0, 4), 0));
             var shadow = manager.Actors[0];
             Physics2D.SyncTransforms(); plate.Refresh();

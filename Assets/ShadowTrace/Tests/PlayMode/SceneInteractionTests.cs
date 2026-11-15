@@ -11,7 +11,7 @@ namespace ShadowTrace.Tests
 {
     public sealed class SceneInteractionTests
     {
-        private const string Props = "Assets/Art/environment/en_elements/";
+        private const string Props = "Assets/Prefab/";
         private readonly List<GameObject> objects = new List<GameObject>();
         private PlayerController2D player;
         private ShadowManager manager;
@@ -25,9 +25,16 @@ namespace ShadowTrace.Tests
             Physics2D.simulationMode = SimulationMode2D.Script;
             Time.timeScale = 1;
             player = Spawn("Assets/ShadowTrace/Prefabs/Player.prefab", new Vector2(-8, 10)).GetComponent<PlayerController2D>();
+            player.transform.localScale = Vector3.one;
+            player.Shape.offset = Vector2.zero;
             manager = New("Test shadow manager").AddComponent<ShadowManager>();
             manager.player = player;
-            manager.shadowPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/ShadowTrace/Prefabs/Shadow.prefab").GetComponent<ShadowActor>();
+            // Keep solver fixtures independent of the production sprite/collider tuning.
+            var source = New("Test shadow source");
+            source.transform.position = new Vector2(-100, -100);
+            source.AddComponent<SpriteRenderer>();
+            manager.shadowPrefab = source.AddComponent<ShadowActor>();
+            manager.shadowPrefab.Shape.size = new Vector2(0.8f, 1.4f);
             ability = player.GetComponent<ShadowTraceAbility>(); ability.manager = manager;
             var floor = New("Test player floor");
             floor.transform.position = new Vector2(-8, 8.8f);
@@ -49,6 +56,7 @@ namespace ShadowTrace.Tests
             var plate = Spawn(Props + "PressurePlate2.prefab", new Vector2(x, 0)).GetComponent<ShadowPressurePlate>();
             plate.mode = mode; plate.targetDoor = target;
             var support = plate.GetComponent<BoxCollider2D>(); support.size = new Vector2(2, 0.3f); support.offset = Vector2.zero;
+            plate.pressArea.transform.localPosition = Vector3.zero;
             plate.pressArea.size = new Vector2(2, 0.24f); plate.pressArea.offset = new Vector2(0, 0.25f);
             Physics2D.SyncTransforms(); plate.Refresh(); return plate;
         }
@@ -57,6 +65,7 @@ namespace ShadowTrace.Tests
         {
             var door = Spawn(Props + "door1.prefab", new Vector2(6, 0)).GetComponent<InteractiveDoor>();
             var blocker = door.GetComponent<BoxCollider2D>(); blocker.size = new Vector2(0.4f, 3); blocker.offset = Vector2.zero;
+            door.interactionArea.transform.localPosition = Vector3.zero;
             door.interactionArea.size = new Vector2(2, 4); door.interactionArea.offset = Vector2.zero;
             door.player = player; Physics2D.SyncTransforms(); return door;
         }
@@ -157,8 +166,10 @@ namespace ShadowTrace.Tests
             player.enabled = false; Assert.IsFalse(door.TryPass(player)); player.enabled = true;
             Assert.IsTrue(door.TryPass(player));
             Assert.AreEqual(0, manager.Count); Assert.AreEqual(TracePhase.Idle, ability.Phase);
-            Assert.IsFalse(plate.IsActive); Assert.IsFalse(door.IsUnlocked);
-            Assert.AreSame(door.closedSprite, door.GetComponent<SpriteRenderer>().sprite);
+            Assert.IsFalse(plate.IsActive); Assert.IsTrue(door.IsUnlocked);
+            Assert.IsTrue(door.IsPermanentlyOpen);
+            Assert.IsFalse(door.GetComponent<BoxCollider2D>().enabled);
+            Assert.AreSame(door.openSprite, door.GetComponent<SpriteRenderer>().sprite);
             Assert.IsTrue(Physics2D.GetIgnoreCollision(door.GetComponent<BoxCollider2D>(), player.Shape));
             Assert.IsTrue(door.PassageGranted); Assert.IsFalse(door.TryPass(player));
             Move(player, new Vector2(6.3f, 0));
@@ -168,6 +179,29 @@ namespace ShadowTrace.Tests
             typeof(InteractiveDoor).GetMethod("Update", Private).Invoke(door, null);
             Assert.IsFalse(door.PassageGranted);
             Assert.IsFalse(Physics2D.GetIgnoreCollision(door.GetComponent<BoxCollider2D>(), player.Shape));
+            Assert.IsTrue(door.IsUnlocked);
+            Assert.IsFalse(door.GetComponent<BoxCollider2D>().enabled);
+            door.gameObject.SetActive(false);
+            door.gameObject.SetActive(true);
+            Assert.IsTrue(door.IsPermanentlyOpen);
+            Assert.IsFalse(door.GetComponent<BoxCollider2D>().enabled);
+        }
+
+        [Test] public void PlayerFallsWhilePressingAgainstWallWithPlayerSurface()
+        {
+            Assert.AreEqual(0, player.Shape.sharedMaterial.friction);
+            var wall = New("Wall");
+            wall.transform.position = new Vector2(0.65f, 3);
+            wall.AddComponent<BoxCollider2D>().size = new Vector2(0.5f, 20);
+            Move(player, new Vector2(0, 5));
+            typeof(PlayerController2D).GetField("<HorizontalInput>k__BackingField", Private).SetValue(player, 1);
+            var step = typeof(PlayerController2D).GetMethod("FixedUpdate", Private);
+            for (int i = 0; i < 40; i++)
+            {
+                step.Invoke(player, null);
+                Physics2D.Simulate(0.02f);
+            }
+            Assert.Less(player.Body.position.y, 3, "Horizontal input must not pin the player to a vertical wall.");
         }
 
         [Test] public void PassingCancelsRecordingAndLatchedDoorRemainsVisuallyOpen()

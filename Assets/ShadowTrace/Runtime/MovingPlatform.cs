@@ -240,6 +240,11 @@ namespace ShadowTrace
                     continue;
                 }
 
+                // The player inherits platform velocity in its controller. Moving its
+                // position here as well would apply the platform displacement twice.
+                if (rider.GetComponent<PlayerController2D>() != null)
+                    continue;
+
                 // 同一个刚体可能挂有多个碰撞体，避免重复搬运。
                 bool alreadyProcessed = false;
 

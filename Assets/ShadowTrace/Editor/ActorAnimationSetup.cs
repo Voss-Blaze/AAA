@@ -156,7 +156,7 @@ namespace ShadowTrace.Editor
             body.constraints = RigidbodyConstraints2D.FreezeRotation;
             body.interpolation = RigidbodyInterpolation2D.Interpolate;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-            shape.sharedMaterial = AssetDatabase.LoadAssetAtPath<PhysicsMaterial2D>("Assets/ShadowTrace/Art/ActorSurface.physicsMaterial2D");
+            shape.sharedMaterial = AssetDatabase.LoadAssetAtPath<PhysicsMaterial2D>("Assets/ShadowTrace/Art/PlayerSurface.physicsMaterial2D");
             var player = GetOrAdd<PlayerController2D>(playerObject);
             var ability = GetOrAdd<ShadowTraceAbility>(playerObject);
             ConfigureVisual(playerObject, shape.size);

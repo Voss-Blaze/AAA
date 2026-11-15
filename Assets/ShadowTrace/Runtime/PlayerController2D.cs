@@ -15,6 +15,8 @@ namespace ShadowTrace
 
         public int HorizontalInput { get; private set; }
         public bool IsGrounded { get; private set; }
+        public bool IsGroundedForAnimation => IsGrounded || (!leavingByJump && platformAnimationGrace > 0);
+        public Vector2 SupportVelocity { get; private set; }
         public bool IsSprinting => sprint;
 
         public Rigidbody2D Body { get; private set; }
@@ -29,6 +31,8 @@ namespace ShadowTrace
 
         private Collider2D groundSupport;
         private bool leavingByJump;
+        private const float PlatformAnimationGraceDuration = 0.08f;
+        private float platformAnimationGrace;
 
         private readonly RaycastHit2D[] hits = new RaycastHit2D[32];
 
@@ -40,7 +44,7 @@ namespace ShadowTrace
                     out var support, out var surfaceVelocity))
             {
                 groundSupport = null;
-                leavingByJump = false;
+                SupportVelocity = Vector2.zero;
                 IsGrounded = false;
                 return false;
             }
@@ -69,6 +73,9 @@ namespace ShadowTrace
                 leavingByJump = false;
 
             groundSupport = IsGrounded ? support : null;
+            SupportVelocity = IsGrounded ? surfaceVelocity : Vector2.zero;
+            if (IsGrounded)
+                platformAnimationGrace = movingSurface ? PlatformAnimationGraceDuration : 0;
 
             return IsGrounded;
         }
@@ -120,6 +127,8 @@ namespace ShadowTrace
         private void FixedUpdate()
         {
             RefreshGrounding();
+            if (!IsGrounded)
+                platformAnimationGrace = Mathf.Max(0, platformAnimationGrace - Time.fixedDeltaTime);
 
             var velocity = Body.velocity;
             bool supported = IsGrounded;
@@ -175,6 +184,8 @@ namespace ShadowTrace
                 airborneSinceLanding = hasLandedOnce;
 
                 leavingByJump = true;
+                platformAnimationGrace = 0;
+                SupportVelocity = Vector2.zero;
                 IsGrounded = false;
                 groundSupport = null;
             }

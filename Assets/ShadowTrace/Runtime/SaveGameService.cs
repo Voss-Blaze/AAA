@@ -9,10 +9,11 @@ namespace ShadowTrace
         [Serializable]
         public sealed class Checkpoint
         {
-            public int version = 1;
+            public int version = 2;
             public string scenePath;
             public string checkpointId;
             public Vector3 position;
+            public string[] openedDoorIds = new string[0];
         }
 
         public static SaveGameService Current { get; set; } = new SaveGameService();
@@ -27,7 +28,7 @@ namespace ShadowTrace
 
         private static bool Valid(Checkpoint data)
         {
-            return data != null && data.version == 1 && !string.IsNullOrEmpty(data.scenePath) &&
+            return data != null && data.version == 2 && data.openedDoorIds != null && !string.IsNullOrEmpty(data.scenePath) &&
                 !string.IsNullOrEmpty(data.checkpointId) && Finite(data.position.x) &&
                 Finite(data.position.y) && Finite(data.position.z);
         }
