@@ -56,9 +56,23 @@ namespace ShadowTrace
 
         private void Start()
         {
+            ConfigureTutorialMenu();
             if (!SaveGameService.Current.ShowNewGameHint) return;
             SaveGameService.Current.ShowNewGameHint = false;
             ShowNoSaveHint();
+        }
+
+        private void ConfigureTutorialMenu()
+        {
+            var progress = TutorialProgress.Read();
+            if (progress.step == TutorialStep.Resume && resumeButton != null &&
+                SaveGameService.Current.TryRead(out var saved) && saved.scenePath == level1ScenePath)
+            {
+                var outline = resumeButton.GetComponent<Outline>();
+                if (outline == null) outline = resumeButton.gameObject.AddComponent<Outline>();
+                outline.effectColor = new Color(1, 0.75f, 0.25f, 1);
+                outline.effectDistance = new Vector2(3, -3);
+            }
         }
 
         private static void CaptureTab(Button button, out Sprite normal, out Sprite selected)
@@ -150,6 +164,7 @@ namespace ShadowTrace
                 return;
             }
             if (!SaveGameService.Current.BeginNewGame()) return;
+            if (!new TutorialProgress().Write()) return;
             Time.timeScale = 1;
             SceneManager.LoadScene(level1ScenePath);
         }

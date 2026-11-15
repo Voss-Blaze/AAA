@@ -37,6 +37,9 @@ namespace ShadowTrace.Tests
             story.endingRevealDuration = 0.05f;
             story.checkpoint.player.Body.gravityScale = 0;
             yield return null;
+            yield return null;
+            // These tests exercise dialogue and end-game triggers outside the tutorial area.
+            story.checkpoint.GetComponent<FirstPlayTutorial>()?.Skip();
         }
 
         [UnityTearDown] public IEnumerator TearDown()
@@ -51,7 +54,7 @@ namespace ShadowTrace.Tests
             foreach (var overlay in Object.FindObjectsOfType<SceneFadeOverlay>()) Object.DestroyImmediate(overlay.gameObject);
             Time.timeScale = 1;
             SaveGameService.Current.BeginNewGame();
-            if (Directory.Exists(directory)) Directory.Delete(directory);
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
             SaveGameService.Current = oldSaves;
         }
 
@@ -129,7 +132,9 @@ namespace ShadowTrace.Tests
         [UnityTest] public IEnumerator DoorHintsFollowProximityAndHideDuringDialogue()
         {
             var hints = level.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<DoorInteractionPrompt>(true)).ToArray();
-            Assert.AreEqual(4, hints.Length);
+            var doors = level.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<InteractiveDoor>(true)).ToArray();
+            CollectionAssert.AreEquivalent(doors, hints.Select(h => h.GetComponent<InteractiveDoor>()).Distinct(),
+                "Every authored door must have a proximity prompt, including scenes with legacy duplicate prompts.");
             foreach (var hint in hints)
             {
                 Assert.AreEqual("[F]", hint.promptText);

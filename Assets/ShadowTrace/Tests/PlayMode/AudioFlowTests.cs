@@ -59,7 +59,7 @@ namespace ShadowTrace.Tests
                 PlayerPrefs.DeleteKey(GameAudioManager.PreferenceKeyPrefix + key);
             PlayerPrefs.Save(); GameAudioManager.PreferenceKeyPrefix = oldPrefix;
             SaveGameService.Current.BeginNewGame();
-            if (Directory.Exists(saveDirectory)) Directory.Delete(saveDirectory);
+            if (Directory.Exists(saveDirectory)) Directory.Delete(saveDirectory, true);
             SaveGameService.Current = oldSaves;
         }
 

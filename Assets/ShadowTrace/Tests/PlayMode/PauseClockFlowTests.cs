@@ -53,7 +53,7 @@ namespace ShadowTrace.Tests
                 if (scene.IsValid() && scene.isLoaded && scene != previous) yield return SceneManager.UnloadSceneAsync(scene);
             }
             SaveGameService.Current.BeginNewGame();
-            if (Directory.Exists(directory)) Directory.Delete(directory);
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
             SaveGameService.Current = oldSaves;
         }
 

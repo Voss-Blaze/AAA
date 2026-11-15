@@ -42,7 +42,7 @@ namespace ShadowTrace.Tests
             var level = SceneManager.GetSceneByPath("Assets/Scenes/Level 1.unity");
             if (level.IsValid() && level.isLoaded && level != previous) yield return SceneManager.UnloadSceneAsync(level);
             SaveGameService.Current.BeginNewGame();
-            if (System.IO.Directory.Exists(saveDirectory)) System.IO.Directory.Delete(saveDirectory);
+            if (System.IO.Directory.Exists(saveDirectory)) System.IO.Directory.Delete(saveDirectory, true);
             SaveGameService.Current = previousSaves;
         }
 

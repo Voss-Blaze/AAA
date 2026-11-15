@@ -5,6 +5,7 @@ namespace ShadowTrace
     [DisallowMultipleComponent, RequireComponent(typeof(BoxCollider2D))]
     public sealed class SpikeHazard : MonoBehaviour
     {
+        public event System.Action<ShadowActor> ShadowDestroyed;
         private void OnTriggerEnter2D(Collider2D other) { Hit(other); }
         private void OnTriggerStay2D(Collider2D other) { Hit(other); }
         private void Hit(Collider2D other)
@@ -12,7 +13,11 @@ namespace ShadowTrace
             var shadow = other.GetComponentInParent<ShadowActor>();
             if (shadow != null)
             {
-                if (shadow.isActiveAndEnabled) shadow.Despawn();
+                if (shadow.isActiveAndEnabled)
+                {
+                    ShadowDestroyed?.Invoke(shadow);
+                    shadow.Despawn();
+                }
                 return;
             }
             var player = other.GetComponentInParent<PlayerController2D>();

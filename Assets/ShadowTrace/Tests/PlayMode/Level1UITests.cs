@@ -47,7 +47,7 @@ namespace ShadowTrace.Tests
             if (scene.IsValid() && scene.isLoaded) yield return SceneManager.UnloadSceneAsync(scene);
             Time.timeScale = 1;
             SaveGameService.Current.BeginNewGame();
-            if (System.IO.Directory.Exists(saveDirectory)) System.IO.Directory.Delete(saveDirectory);
+            if (System.IO.Directory.Exists(saveDirectory)) System.IO.Directory.Delete(saveDirectory, true);
             SaveGameService.Current = previousSaves;
         }
 

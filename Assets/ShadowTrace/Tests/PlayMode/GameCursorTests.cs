@@ -39,7 +39,7 @@ namespace ShadowTrace.Tests
             }
             if (previousAudio == null && GameAudioManager.Instance != null) Object.Destroy(GameAudioManager.Instance.gameObject);
             Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-            SaveGameService.Current.BeginNewGame(); if (Directory.Exists(directory)) Directory.Delete(directory);
+            SaveGameService.Current.BeginNewGame(); if (Directory.Exists(directory)) Directory.Delete(directory, true);
             SaveGameService.Current = previousSaves; Time.timeScale = 1; yield return null;
         }
 

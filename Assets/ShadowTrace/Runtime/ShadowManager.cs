@@ -10,6 +10,8 @@ namespace ShadowTrace
         public ShadowUISettings uiSettings;
         public event Action SlotsChanged;
         public event Action<ShadowNotice> NoticeShown;
+        public event Action<ShadowActor> ActorSpawned;
+        public event Action<ShadowActor> ActorRemoved;
         [Min(1), Tooltip("同时存在的影子数量上限；在进入 Play 前设置，运行中修改需重新运行生效。")]
         public int maxShadows = 8;
         [Min(0.1f)] public float groundSearchDistance = 20;
@@ -88,6 +90,7 @@ namespace ShadowTrace
             foreach (var other in actors)
                 if (other != null) Physics2D.IgnoreCollision(actor.Shape, other.Shape, true);
             actors[slot] = actor;
+            ActorSpawned?.Invoke(actor);
             SlotsChanged?.Invoke();
             ShowNotice(ShadowNotice.Spawned);
             return true;
@@ -129,6 +132,7 @@ namespace ShadowTrace
             if (SelectedSlot == slot) SelectedSlot = -1;
             actors[slot] = null;
             slots.Release(slot);
+            ActorRemoved?.Invoke(actor);
             SlotsChanged?.Invoke();
         }
 

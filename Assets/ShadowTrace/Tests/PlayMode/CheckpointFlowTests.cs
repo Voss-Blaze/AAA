@@ -47,7 +47,7 @@ namespace ShadowTrace.Tests
                 if (scene.IsValid() && scene.isLoaded && scene != previous) yield return SceneManager.UnloadSceneAsync(scene);
             }
             SaveGameService.Current.BeginNewGame();
-            if (Directory.Exists(directory)) Directory.Delete(directory);
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
             SaveGameService.Current = previousSaves;
         }
 
@@ -151,7 +151,7 @@ namespace ShadowTrace.Tests
             yield return Light(controller.lamps[1]);
             Assert.IsTrue(SaveGameService.Current.TryRead(out var data));
             Assert.AreEqual(controller.lamps[1].checkpointId, data.checkpointId);
-            Assert.AreEqual(1, Directory.GetFiles(directory).Length);
+            Assert.AreEqual(1, Directory.GetFiles(directory, "checkpoint.json*").Length);
             controller.deathFadeDuration = 0.04f; controller.deathBlackDuration = 0.04f;
             controller.life.Die();
             Assert.IsTrue(controller.deathBlackout.gameObject.activeSelf);

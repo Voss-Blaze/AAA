@@ -9,12 +9,14 @@ namespace ShadowTrace
         [Min(0.05f)] public float effectDuration = 0.6f;
         public bool IsDead { get; private set; }
         public event System.Action Died;
+        public System.Func<bool> TryTutorialRecovery { get; set; }
         private bool ownsPause;
         private float previousTimeScale;
 
         public void Die()
         {
             if (IsDead) return;
+            if (TryTutorialRecovery != null && TryTutorialRecovery()) return;
             IsDead = true;
             var player = GetComponent<PlayerController2D>();
             var ability = GetComponent<ShadowTraceAbility>();

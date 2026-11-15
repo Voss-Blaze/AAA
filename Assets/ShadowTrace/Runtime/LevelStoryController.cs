@@ -33,6 +33,7 @@ namespace ShadowTrace
         public static bool InputBlocked => owner != null;
         public bool IsPlaying => owner == this;
         public bool EndingStarted { get; private set; }
+        public bool IntroductionFinished { get; private set; }
         public bool WaitingForAdvance { get; private set; }
         public Text CurrentText { get; private set; }
         private static LevelStoryController owner;
@@ -59,6 +60,7 @@ namespace ShadowTrace
         {
             // Capture at entry: lighting a lamp during a new run must not cancel its introduction.
             skipIntroduction = SaveGameService.Current.TryRead(out var saved) && saved.scenePath == gameObject.scene.path;
+            IntroductionFinished = skipIntroduction;
             Cache(introduction); Cache(endingTalk); Cache(endingWords);
             if (doorStories != null) foreach (var binding in doorStories) Cache(binding.text);
             if (talkPanel != null) talkPanel.SetActive(false);
@@ -165,6 +167,7 @@ namespace ShadowTrace
                     yield break;
                 }
                 yield return PlayText(text, talkPanel);
+                if (text == introduction) IntroductionFinished = true;
             }
             Release();
             playback = null;

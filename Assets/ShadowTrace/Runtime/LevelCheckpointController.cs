@@ -16,6 +16,13 @@ namespace ShadowTrace
         /// <summary>终局返回的目标场景路径，供 LevelStoryController 做黑屏异步转场。</summary>
         public string MenuScenePath => menuScenePath;
         public ShadowTraceHUD hud;
+        public bool enableFirstPlayTutorial;
+        public string tutorialSpikeName;
+        public string tutorialDoorId;
+        public string tutorialLampId;
+        public bool HasResumed { get; private set; }
+        public string ResumedCheckpointId { get; private set; }
+        public event System.Action<ShadowLamp> CheckpointSaved;
         [Min(0)] public float deathFadeDuration = 0.35f;
         [Min(0)] public float deathBlackDuration = 0.35f;
         [Tooltip("进入 Log 后，从黑屏恢复画面的时长（秒）。")]
@@ -23,7 +30,12 @@ namespace ShadowTrace
         [Min(0.1f)] public float groundSearchDistance = 20;
         private bool returningToMenu;
 
-        private void Awake() { EnsureDeathBlackout(); }
+        private void Awake()
+        {
+            EnsureDeathBlackout();
+            if (enableFirstPlayTutorial && GetComponent<FirstPlayTutorial>() == null)
+                gameObject.AddComponent<FirstPlayTutorial>();
+        }
 
         private void EnsureDeathBlackout()
         {
@@ -124,6 +136,8 @@ namespace ShadowTrace
             player.Body.velocity = Vector2.zero;
             Physics2D.SyncTransforms();
             savedLamp.RestoreLit();
+            HasResumed = true;
+            ResumedCheckpointId = data.checkpointId;
             var camera = Camera.main;
             var follow = camera != null ? camera.GetComponent<TraceCameraFollow>() : null;
             if (follow != null && follow.target == player.transform)
@@ -181,6 +195,7 @@ namespace ShadowTrace
                 var settings = hud.manager.uiSettings;
                 hud.ShowPriorityMessage(settings.saveSucceeded, settings.saveNoticeDuration);
             }
+            if (saved) CheckpointSaved?.Invoke(lamp);
         }
 
         private List<InteractiveDoor> SceneDoors()
